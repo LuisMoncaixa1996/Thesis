@@ -75,15 +75,15 @@ Uma vez que o package (gee) permite apenas analisar o modelo gee e não permite 
 
 #MODELOS 70_30
 #GEEPACK models com diferentes estruturas de correlação e respetivos valores QIC
-GEEPACK_Modelo_70_30_ex = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + Internos + Local_da_LIO + Complicações ) , id = Processo , data = train_70, family = binomial, corstr = "exchangeable",scale.fix = TRUE)
+GEEPACK_Modelo_70_30_ex = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp +  Local_da_LIO + Complicações ) , id = Processo , data = train_70, family = binomial, corstr = "exchangeable",scale.fix = TRUE)
 summary(GEEPACK_Modelo_70_30_ex)
 MESS::QIC(GEEPACK_Modelo_70_30_ex)
 
-GEEPACK_Modelo_70_30_ar1 = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + Internos + Local_da_LIO + Complicações) , id = Processo , data = train_70, family = binomial, corstr = "ar1",scale.fix = TRUE)
+GEEPACK_Modelo_70_30_ar1 = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + Local_da_LIO + Complicações) , id = Processo , data = train_70, family = binomial, corstr = "ar1",scale.fix = TRUE)
 summary(GEEPACK_Modelo_70_30_ar1)
 MESS::QIC(GEEPACK_Modelo_70_30_ar1)
 
-GEEPACK_Modelo_70_30_ind = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + Internos + Local_da_LIO + Complicações ) , id = Processo , data = train_70, family = binomial, corstr = "independence",scale.fix = TRUE)
+GEEPACK_Modelo_70_30_ind = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp  + Local_da_LIO + Complicações ) , id = Processo , data = train_70, family = binomial, corstr = "independence",scale.fix = TRUE)
 summary(GEEPACK_Modelo_70_30_ind)
 MESS::QIC(GEEPACK_Modelo_70_30_ind)
 
@@ -92,30 +92,30 @@ MESS::QIC(GEEPACK_Modelo_70_30_ind)
 
 #Modelo 75_25
 
-GEEPACK_Modelo_75_25_ex = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + Internos + Local_da_LIO + Complicações ) , id = Processo , data = train_75, family = binomial, corstr = "exchangeable")
+GEEPACK_Modelo_75_25_ex = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + Local_da_LIO + Complicações ) , id = Processo , data = train_75, family = binomial, corstr = "exchangeable")
 summary(GEEPACK_Modelo_75_25_ex)
 MESS::QIC(GEEPACK_Modelo_75_25_ex)
 
-GEEPACK_Modelo_75_25_ar1 = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + Internos + Local_da_LIO + Complicações) , id = Processo , data = train_75, family = binomial, corstr = "ar1")
+GEEPACK_Modelo_75_25_ar1 = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp +  Local_da_LIO + Complicações) , id = Processo , data = train_75, family = binomial, corstr = "ar1")
 summary(GEEPACK_Modelo_75_25_ar1)
 MESS::QIC(GEEPACK_Modelo_75_25_ar1)
 
-GEEPACK_Modelo_75_25_ind = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + Internos + Local_da_LIO + Complicações ) , id = Processo , data = train_75, family = binomial, corstr = "independence")
+GEEPACK_Modelo_75_25_ind = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp +  Local_da_LIO + Complicações ) , id = Processo , data = train_75, family = binomial, corstr = "independence")
 summary(GEEPACK_Modelo_75_25_ind)
 MESS::QIC(GEEPACK_Modelo_75_25_ind)
 
 
 #Modelo 80_20
 
-GEEPACK_Modelo_80_20_ex = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + Internos + Local_da_LIO + Complicações) , id = Processo , data = train_80, family = binomial, corstr = "exchangeable")
+GEEPACK_Modelo_80_20_ex = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp +  Local_da_LIO + Complicações) , id = Processo , data = train_80, family = binomial, corstr = "exchangeable")
 summary(GEEPACK_Modelo_80_20_ex)
 MESS::QIC(GEEPACK_Modelo_80_20_ex)
 
-GEEPACK_Modelo_80_20_ar1 = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + Internos + Local_da_LIO + Complicações) , id = Processo , data = train_80, family = binomial, corstr = "ar1")
+GEEPACK_Modelo_80_20_ar1 = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp +  Local_da_LIO + Complicações) , id = Processo , data = train_80, family = binomial, corstr = "ar1")
 summary(GEEPACK_Modelo_80_20_ar1)
 MESS::QIC(GEEPACK_Modelo_80_20_ar1)
 
-GEEPACK_Modelo_80_20_ind = geeglm(PEX~(Idade + Sexo + Lat + Dilpp + Internos + Local_da_LIO + Complicações) , id = Processo , data = train_80, family = binomial, corstr = "independence")
+GEEPACK_Modelo_80_20_ind = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + Local_da_LIO + Complicações) , id = Processo , data = train_80, family = binomial, corstr = "independence")
 summary(GEEPACK_Modelo_80_20_ind)
 MESS::QIC(GEEPACK_Modelo_80_20_ind)
 
@@ -278,6 +278,12 @@ ccgeepack1$Estimate = exp(ccgeepack1$Estimate)
 ccgeepack1$lwr = exp(ccgeepack1$lwr)
 ccgeepack1$upr = exp(ccgeepack1$upr)
 ccgeepack1
+
+
+
+
+
+
 
 ```
 Nos modelos acima descritos, quando utilizado o package gee, uma vez que este permite desenvolver o modelo mesmo com dados omissos existentes, foi introduzida a covariavel LIO_Dp para análise. No modelo utilizando o package geepack não foi possivel introduzir esta covariavel uma vez que esta apresenta valores omissos. Na análise dos modelos é possivel identificar algumas diferenças nas estimativas obtidas em algumas covariáveis, no entanto, na covariavel "Dil pp (mm)" as diferenças são irrelevantes, pelo que é possível identificar esta covariável como uma covariável de interesse, ou seja, tendo em conta que o seu valor estimado, verifica-se que a alteração de valor neste parâmetro influência a resposta da presença ou não da pseudoexfoliação, ou seja, uma menor dilatação pupilar poderá indicar uma presença de pseudoexfoliação.
