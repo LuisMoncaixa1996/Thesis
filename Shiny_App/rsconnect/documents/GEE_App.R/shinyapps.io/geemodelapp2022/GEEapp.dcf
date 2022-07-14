@@ -1,0 +1,14 @@
+name: GEEapp
+title: GEEapp
+username:
+account: geemodelapp2022
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6619957
+bundleId: 6087727
+url: https://geemodelapp2022.shinyapps.io/GEEapp/
+when: 1657543465.93345
+lastSyncTime: 1657543465.93345
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData

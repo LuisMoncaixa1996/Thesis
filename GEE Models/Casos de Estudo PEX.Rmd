@@ -249,6 +249,8 @@ Posto isto foram desenvolvidos dois modelos (utilizando o package gee e geepack)
 ``` {r}
 
 library(gee)
+data$Local_da_LIO = factor(data$Local_da_LIO)
+data$Complicações = factor(data$Complicações)
 GEE_Modelo_LO = gee(PEX~Local_da_LIO + Dilpp + LIO_Dp + Complicações , id = Processo, data = data, family = binomial(link = "logit"), corstr = "exchangeable",scale.fix = T)
 summary(GEE_Modelo_LO)
 #Intervalos de confiança

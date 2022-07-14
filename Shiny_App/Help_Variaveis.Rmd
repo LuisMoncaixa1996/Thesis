@@ -1,0 +1,5 @@
+### **Variables**
+
+Nesta secção é selecionada a variável resposta do modelo, bem como as suas covariáveis associadas. As variáveis serão adicionadas ao modelo após o clique nos respetivos botões para salvar. 
+A **variável resposta do modelo** é selecionada nesta caixa onde estão representadas todas as colunas do dataset descarregado. O utilizador deverá selecionar a coluna que corresponde à variavél resposta do estudo em análise sendo esta adiconada ao modelo.
+

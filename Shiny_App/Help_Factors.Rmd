@@ -1,0 +1,6 @@
+### **Factors**
+
+Nesta secção poderá factorizar as colunas selecionadas do *dataset*, esta factorização consiste em transformar os valores da coluna em 'níveis' consoante o seu valor, esta fatorização é importante em colunas que apresentem valores repetidos tal como o sexo de um paciente, por exemplo. Na secção seguinte poderá visualizar o *dataset* com as alterações efetuadas no decorrer deste menu. No menu seguinte **Escolha de Variáveis** será iniciado o processo de construção do modelo GEE com a definição das variáveis de interesse.
+
+
+

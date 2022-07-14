@@ -1,0 +1,4 @@
+### **Upload Dataset**
+
+Nesta secção será descarregado e configurado o *dataset* que será utilizado ao longo da aplicação, o *dataset* deverá estar no formato *.csv* ou *.xlsx*. Após o *Upload* poderá configurar o seu *dataset* de modo a possiblitar uma melhor visualização do mesmo. Caso pretenda alterar o nome de algumas colunas do *dataset*, bem como factorizar algumas dessas colunas prossiga para o próximo submenu designado de **Dataset Changes**, caso contrário prossiga para a seleção das variáveis de interesse no menu **Escolha das Variáveis**.
+

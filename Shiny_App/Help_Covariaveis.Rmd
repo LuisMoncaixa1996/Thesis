@@ -1,0 +1,5 @@
+### **Covariables**
+
+Nesta secção é selecionada a variável resposta do modelo, bem como as suas covariáveis associadas. As variáveis serão adicionadas ao modelo após o clique nos respetivos botões para salvar. 
+As **covariáveis** se selecionadas a partir das caixas de seleção apresentadas serão adicionadas ao modelo como apresentado no seguinte exemplo: (Sexo + Idade + Dilatação + etc...). O utilizador poderá introduzir uma nova forma de expressão das covariáveis na caixa de texto respetiva, sendo obrigatório a introdução dos nomes exatos das colunas correspondentes às covariáveis selecionadas. Nota: Apenas será considerado uma das formas de indicar as covariáveis, em caso de utilização de ambas as formas será utilizada a expressão escrita pelo utilizador.
+

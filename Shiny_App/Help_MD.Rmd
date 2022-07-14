@@ -1,0 +1,3 @@
+### **Model definitions**
+
+Esta será a ultima secção de construção do modelo *GEE*. O utilizador poderá identificar o seu modelo com um nome especifico, esse nome será utilizado para fases posteriores e como nome identificador de downloads. A **descrição do modelo** é opcional, o utilizador poderá descrever o seu modelo nesta caixa de texto. Após o clique no botão o seu modelo *GEE* está pronto para análise, O modelo pode ser visualizado no menu **GEE Models**.
