@@ -1,4 +1,4 @@
-### **Family**
+### **Distribution Family**
 
-Nesta secção são definidas a familia de distribuição da variável resposta e a coluna correspondente ao id ou elemento identificador das observações repetidas.
-Para definir o modelo estão apresentadas as várias **familias** de distribuição disponíveis para utilização e análise dos modelos *GEE*, o utilizador deverá selecionar a familia que mais se identifica com a variável resposta selecionada na secção anterior.
+In this section, the distribution family of the response variable and the column corresponding to the id or identifier of the repeated observations are defined.
+To define the model, the various distribution **families** available for use and analysis of the *GEE* models are presented, the user must select the family that most identifies with the response variable selected in the previous section.

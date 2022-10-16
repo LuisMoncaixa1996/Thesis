@@ -1,18 +1,40 @@
 
-#### COMP2ROC
+#### **GEE MODELS**
 
 
-**COMP2ROC** é um package que permite comparar duas curvas ROC que se intercetam, mediante várias metodologias de comparação, permitindo a análise dos dois sistemas individualmente e a sua comparação. Este package compara os sistemas consoante a estrutura de dependência/independência dos datasets a analisar [1]. 
-Este package é muito objetivo uma vez que, para além que representar as curvas consoante o dataset recebido, permite a obtenção de vários parâmetros estatísticos como o valor da AUC, intervalos de confiança e desvios-padrão para facilitar análise entre testes [2].
+**GEE models** (Generalized Estimating Equations), were developed by *Liang and Zeger* [1], these models represent a class of models that are frequently used for data in which there is a correlation between them. These models are an extension of the GLMs (Generalized Linear Models) as they allow analyzing longitudinal data as well as assuming the existing correlation between the data. Unlike other regression models, GEE's do not require a defined data distribution, in turn, they require a data correlation structure to be assigned. The GHG models represent an important tool in the advancement of biomedical research as they allow the analysis of the impact of several variables on individuals singularly over time, as well as on a population, taking into account the observations of each individual [2].
 
 
-#### COMP2ROC Simulator
 
-**COMP2ROC Simulator** permite ao utilizador comparar duas curvas ROC de forma intuitiva e rápida, descrevendo os vários parâmetros e valores estatísticos, bem como representações gráficas das curvas utilizadas, auxiliando o utilizador a uma análise completa e rigorosa dos seus dados.
+
+
+
+
+
+
+
+#### **SAGA (Shiny Application for GEE Analysis)**
+
+
+
+**SAGA (Shiny Application for GEE Analysis)** is an application with the objective of forming GEE models from a set of data provided by the user, allowing the visualization of its results, graphs and statistics, being possible to validate these same results through ROC analysis. This application allows dynamic use by the user, without prior knowledge of computer programming.
+This application allows:
+– Build GEE models to different types of variables.
+– Describe the model used.
+– Identify the relationship of the different parameters with the response variable.
+– Generate statistical inferences through confidence intervals and statistical tests, which can be downloaded by the user.
+– Graphical complementation in order to facilitate the analysis.
+
+
+
+
+
+
+
 
 
 #### References
-1. Braga, A.C., Frade, H., Carvalho, S., and Santiago, A. Comp2ROC: Compare Two ROC Curves that Intersect. R package version 1.1.4. (2016). https://CRAN.R/project.org/package=Comp2ROC
-2. Braga, A.C., Costa, L., and Oliveira, P.: An alternative method for global and partial comparison of two diagnostic systems based on ROC curves. Journal of Statistical Computation and Simulation, 83(2), 307-325 (2013).
-3.	Quintas J.P., Machado e Costa F., Braga A.C. (2020) ROSY Application for Selecting R Packages that Perform ROC Analysis. In: Gervasi O. et al. (eds) Computational Science and Its Applications – ICCSA 2020. ICCSA 2020. Lecture Notes in Computer Science, vol 12251. Springer, Cham. https://doi.org/10.1007/978-3-030-58808-3_16
+1. Liang, K.-Y. and Zeger, S. L. (1986). Longitudinal data analysis using generalized linear
+models. Biometrika, 73(1):13–22.
+2. Wang, Y.-G., Fu, L., and Paul, S. (2022). Analysis of longitudinal data with examples
 

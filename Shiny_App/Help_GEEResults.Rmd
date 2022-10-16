@@ -1,4 +1,4 @@
 ### **GEE Results**
 
-Os resultados dos modelos *GEE* selecionados são apresentados nesta secção, para análise estão representados os valores de estimativa, os erros padrão, Wald-Test e Intervalos de confiança para cada covariável selecionada. A tabela gerada para cada modelo poderá ser visualizada selecionando o modelo desejado, o utilizador poderá efetuar o download da tabela gerada para o seu computador com o nome do modelo definido pelo utilizador. A tabela estará no formato .csv.
-Nota: Para efetuar uma nova análise sugere-se o reiniciar da aplicação para e proceder a todos os passos explicados nas secções anteriores.
+The results of the selected *GEE* models are presented in this section, for analysis the estimation values, standard errors, Wald-Test and Confidence intervals for each selected covariate are represented. The table generated for each model can be viewed by selecting the desired model, the user can download the generated table to his computer with the name of the model defined by the user. The table will be in .csv format.
+Note: To perform a new analysis, it is suggested to restart the application to proceed with all the steps explained in the previous sections.

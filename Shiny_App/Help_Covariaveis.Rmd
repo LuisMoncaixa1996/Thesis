@@ -1,5 +1,6 @@
 ### **Covariables**
 
-Nesta secção é selecionada a variável resposta do modelo, bem como as suas covariáveis associadas. As variáveis serão adicionadas ao modelo após o clique nos respetivos botões para salvar. 
-As **covariáveis** se selecionadas a partir das caixas de seleção apresentadas serão adicionadas ao modelo como apresentado no seguinte exemplo: (Sexo + Idade + Dilatação + etc...). O utilizador poderá introduzir uma nova forma de expressão das covariáveis na caixa de texto respetiva, sendo obrigatório a introdução dos nomes exatos das colunas correspondentes às covariáveis selecionadas. Nota: Apenas será considerado uma das formas de indicar as covariáveis, em caso de utilização de ambas as formas será utilizada a expressão escrita pelo utilizador.
+In this section, the model response variable is selected, as well as its associated covariates. The variables will be added to the model after clicking on the respective buttons to save.
+The **covariates** can be selected in two ways, from the selection boxes presented where the selected covariates will be added to the model as shown in the following example: (Sex + Age + Dilation + etc...), and by introduction of an expression of the covariates in the respective text box, being mandatory the introduction of the exact names of the columns corresponding to the selected covariates. 
+**Note:** Only one of the ways to indicate the covariates will be considered, if both ways are used, the expression written by the user will be used.
 

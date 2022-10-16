@@ -5,8 +5,7 @@ require(devtools)
 library(shiny)
 library(shinydashboard)
 library(DT)
-library(xlsx)
-library(readr)
+library(Comp2ROC)
 library(plotly)
 library(shinyWidgets)
 library(dplyr)
@@ -15,16 +14,6 @@ library(readxl)
 library(geepack)
 library(MESS)
 library(shinyjs)
-library(caTools)
-library(pROC)
-library(spind)
-library(gee)
-library(ROCR)
-library(cowplot)
-library(ggplot2)
-library(markdown)
-
-
 
 options(shiny.fullstacktrace=TRUE)
 
@@ -46,16 +35,24 @@ tweaks <-
 #Interface da aplica??o
 ui <- shinyUI(
     dashboardPage(skin = 'black',
-        dashboardHeader(title = "SAGA", titleWidth = 350),
+        dashboardHeader(title = "GEE Models", titleWidth = 300,tags$li(class = "dropdown",
+                                                                     dropMenu(
+                                                                         dropdownButton("Info", circle = TRUE, status = 'primary', icon = icon('info'),size = "sm", up = FALSE),
+                                                                         h3(strong('Information')),
+                                                                         br(),
+                                                                         h5(div(includeMarkdown("Help_Info.Rmd"), 
+                                                                                align="justify")),
+                                                                         placement = "right",
+                                                                         arrow = TRUE) )),
         dashboardSidebar(
             width = 350,
             sidebarMenu(id = 'sidebarmenu',
                         # Menu correspondente ao Upload dos datasets
-                        menuItem("Dataset Preparation", tabName = "Prep", icon = icon("upload"),
+                        menuItem("Preparacao do modelo", tabName = "Prep", icon = icon("upload"),
                                  menuSubItem("Upload Dataset", tabName = "Upload", icon = icon("upload")),
                                  menuSubItem("Dataset changes", tabName = "DataChange", icon = icon("database"))),
                                  
-                        menuItem('Variables Definition', tabName = "Select", icon = icon("edit")),
+                        menuItem('Escolha das variaveis', tabName = "Select", icon = icon("edit")),
                         # Menus de compara??o entre curvas dependendo do tipo de vari?vel
                         menuItem("GEE Models", icon = icon("clipboard"),
                                  tabName = "Gee_List"),
@@ -124,7 +121,7 @@ ui <- shinyUI(
                                   "New column name:   "),
                            column(4,style="margin-top:-100px;margin-left:200px; font-size:10px; font-family:Times New Roman;",
                                   textAreaInput("NewColumName", NULL,height = '40px', width = '1000px')),
-                           column(12,style = "margin-top: -100px; text-align: right;margin-left:-300px",
+                           column(12,style = "text-align: right;margin-left:-200px",
                                   actionButton("Colbutton", "Save", icon("save"), 
                                                style="width: 150px; color: #fff; background-color: #337ab7; border-color: #2e6da4"))),
                   tabPanel("Factors",column(12,style="height: 40px;font-size:120%; font-weight: bold; font-family:Georgia;",  
@@ -159,7 +156,7 @@ ui <- shinyUI(
                                                       style="width: 150px; color: #fff; background-color: #337ab7; border-color: #2e6da4"))
                                
                                
-                           ),div(style = " font-family: Georgia; font-weight: normal; text-align: right; margin-top: 10px; margin-right: 10px",dropdownButton(includeMarkdown("Help_Covariaveis.Rmd"), circle = TRUE, icon = icon('info'),size = "xs",width = "300px", up = FALSE, right = TRUE)),
+                           ),
                            box(solidHeader = TRUE,
                                collapsible = TRUE, width = "1000px",
                                column(12,style="height: 40px;font-size:120%; font-weight: bold; font-family:Georgia;",  
@@ -179,7 +176,7 @@ ui <- shinyUI(
                                         actionButton("Covariablebutton", "Select", icon("check", lib = "glyphicon"), 
                                                      style="width: 150px;color: #fff; background-color: #337ab7; border-color: #2e6da4")))
                            ),
-                  tabPanel("Family/ID", div(style = " font-family: Georgia; font-weight: normal; text-align: right; margin-top: 10px; margin-right: 10px",dropdownButton(includeMarkdown("Help_ID.Rmd"), circle = TRUE, icon = icon('info'),size = "xs",width = "300px", up = FALSE, right = TRUE)),
+                  tabPanel("Family/ID",
                            box(solidHeader = TRUE,
                                collapsible = TRUE, width = "1000px",
                                column(12,style="height: 40px;font-size:120%;font-weight: bold; font-family:Georgia;",  
@@ -189,7 +186,7 @@ ui <- shinyUI(
                                column(12,style = "text-align: right; margin-top: 20px",
                                       actionButton("IDbutton", "Select", icon("check", lib = "glyphicon"), 
                                                    style="width: 150px;color: #fff; background-color: #337ab7; border-color: #2e6da4"))
-                               ),div(style = " font-family: Georgia; font-weight: normal; text-align: right; margin-top: 10px; margin-right: 10px",dropdownButton(includeMarkdown("Help_Family.Rmd"), circle = TRUE, icon = icon('info'),size = "xs",width = "300px", up = FALSE, right = TRUE)),
+                               ),
                            box(solidHeader = TRUE, collapsible = TRUE, width = "1000px",
                                column(12,style="height: 40px;font-size:120%;font-weight: bold; font-family:Georgia;",  
                                       "Distribution Family:  "),
@@ -201,7 +198,7 @@ ui <- shinyUI(
                                       actionButton("Familybutton", "Select", icon("check", lib = "glyphicon"), 
                                                    style="width: 150px;color: #fff; background-color: #337ab7; border-color: #2e6da4"))
                                )),
-                  tabPanel("Correlation Structure",div(style = " font-family: Georgia; font-weight: normal; text-align: right; margin-top: 10px; margin-right: 10px",dropdownButton(includeMarkdown("Help_CS.Rmd"), circle = TRUE, icon = icon('info'),size = "xs",width = "300px", up = FALSE, right = TRUE)),
+                  tabPanel("Correlation Structure",
                            column(5,style="display: inline-block;margin-top:50px;margin-right:0px;font-size:120%;font-weight: bold; font-family:Georgia;",  
                                   "Choose your correlation structure:  "),
                            column(5,style="display: inline-block;margin-top:45px; margin-left: -200px; font-size:120%; font-family:Times New Roman;",
@@ -218,7 +215,7 @@ ui <- shinyUI(
                            column(12,DT::dataTableOutput('QIC_Table'))
                            
                            ),
-                  tabPanel("Model Definitions",div(style = " font-family: Georgia; font-weight: normal; text-align: right; margin-top: 10px; margin-right: 10px",dropdownButton(includeMarkdown("Help_MD.Rmd"), circle = TRUE, icon = icon('info'),size = "xs",width = "300px", up = FALSE, right = TRUE)),
+                  tabPanel("Model Definitions",
                            column(4,style="display: inline-block;margin-top:50px;margin-right:0px;font-size:120%;font-weight: bold; font-family:Georgia;",  
                                   "Name your Model:  "),
                            column(5,style="display: inline-block;margin-top:45px;margin-left: -200px; font-size:120%; font-family:Times New Roman;",
@@ -227,15 +224,14 @@ ui <- shinyUI(
                                   "Describe your model:  "),
                            column(6,style="display: inline-block;margin-top:45px;margin-left: -320px; font-size:120%; font-family:Times New Roman;",
                                   textAreaInput("Model_description", NULL,height = '50px', width = '570px')),
-                           column(12,style = "text-align: right; margin-top: -110px; margin-left: -200px;",
+                           column(12,style = "text-align: right; margin-top: -100px; margin-left: -150px;",
                                   actionButton("MDbutton", "Select", icon("check", lib = "glyphicon"), 
-                                               style="width: 150px;color: #fff; background-color: #337ab7; border-color: #2e6da4"),actionButton("Savebutton", "Save", icon("save"), 
-                                                                                                                                                style="width: 150px;color: #fff; background-color: #337ab7; border-color: #2e6da4")))
+                                               style="width: 200px;color: #fff; background-color: #337ab7; border-color: #2e6da4")))
                   
                   
                 )),
                 #Interface do segundo menu (Dependentes) -> Escolha das vari?veis
-                tabItem("Gee_List",div(style = " font-family: Georgia; font-weight: normal; text-align: right; margin-top: 10px; margin-right: 10px",dropdownButton(includeMarkdown("Help_GEEModels.Rmd"), circle = TRUE, icon = icon('info'),size = "xs",width = "300px", up = FALSE, right = TRUE)), box(id = "Model_1",solidHeader = TRUE, width = "1000px",
+                tabItem("Gee_List", box(id = "Model_1",solidHeader = TRUE, width = "1000px",
                                         column(5,style="margin-top:0px;font-size:150%;font-weight: bold; font-family:Georgia;",  
                                                textOutput('values')),
                                         column(10,style="margin-top:10px;font-size:100%; font-family:Times New Roman;",  
@@ -301,12 +297,12 @@ ui <- shinyUI(
                         div(style="display:inline-block;float:right;padding:10px;font-size:80%;",actionButton("Editbutton", "Edit", icon("pencil"), 
                                                                       style="width: 150px;color: #fff; background-color: #337ab7; border-color: #2e6da4")),
                         div(style="display:inline-block;float:right;padding:10px;font-size:80%;",actionButton("ADDbutton", "Add", icon("plus"), 
-                                                                                                              style="width: 150px;color: #fff; background-color: #337ab7; border-color: #2e6da4"),actionButton("ADDbutton_3","Add",icon("plus"),style="width: 150px;color: #fff; background-color: #337ab7; border-color: #2e6da4"))
+                                                                                                              style="width: 150px;color: #fff; background-color: #337ab7; border-color: #2e6da4"))
                     ),
                 tabItem("ROC",tabBox(
                   title = "Validation: ROC Analysis",
                   id = "ROC_Analysis", height = "1000px", width = "1000px",
-                  tabPanel("Data Split",div(style = " font-family: Georgia; font-weight: normal; text-align: right; margin-top: 10px; margin-right: 10px",dropdownButton(includeMarkdown("Help_Data.Rmd"), circle = TRUE, icon = icon('info'),size = "xs",width = "300px", up = FALSE, right = TRUE)), column(4,style="display: inline-block;margin-top:50px;margin-right:0px;font-size:120%;font-weight: bold; font-family:Georgia;",  
+                  tabPanel("Data Split", column(4,style="display: inline-block;margin-top:50px;margin-right:0px;font-size:120%;font-weight: bold; font-family:Georgia;",  
                                            "Define your data split for ROC validation: "),
                         column(8,style="display: inline-block;margin-top:45px; font-size:120%; font-family:Times New Roman;",
                                selectInput("Split_data",NULL,c('Train: 70% - Test: 30%','Train: 75% - Test: 25%','Train: 80% - Test: 20%',
@@ -325,11 +321,11 @@ ui <- shinyUI(
                                       textOutput('ROC_model_def_1')),
                                column(4,style="margin-top:50px;margin-left:180px;margin-right:0px;font-size:180%;font-weight: bold; font-family:Georgia;",  
                                       "Accuraccy: "),
-                               column(5,style="margin-top:55px;margin-left:-220px; font-size:170%;font-weight: bold; font-family:Times New Roman; color: red; ",  
+                               column(5,style="margin-top:55px;margin-left:-220px; font-size:150%;font-weight: bold; font-family:Times New Roman; color: red; ",  
                                       textOutput("ROC_ACC_1")),
-                               column(5,style="margin-top:-30px;margin-left:800px;margin-right:0px;font-size:180%;font-weight: bold; font-family:Georgia;",  
+                               column(5,style="margin-top:50px;margin-left:-200px;margin-right:0px;font-size:180%;font-weight: bold; font-family:Georgia;",  
                                       "AUC: "),
-                               column(5,style="margin-top:-35px;margin-left:1000px;font-size:170%;font-weight: bold; font-family:Times New Roman; color: green;",  
+                               column(2,style="margin-top:55px;margin-left:-380px;font-size:150%;font-weight: bold; font-family:Times New Roman; color: green;",  
                                       textOutput("ROC_AUC_1"))),
                            box(id = "ROC_Model2", solidHeader = TRUE,collapsible = TRUE, width = "800px",height = "200px",
                                column(12,style="text-align: center; margin-top:0px;font-size:150%;font-weight: bold; font-family:Georgia;",  
@@ -338,11 +334,11 @@ ui <- shinyUI(
                                       textOutput('ROC_model_def_2')),
                                column(4,style="margin-top:50px;margin-left:180px;margin-right:0px;font-size:180%;font-weight: bold; font-family:Georgia;",  
                                       "Accuraccy: "),
-                               column(5,style="margin-top:55px;margin-left:-220px; font-size:170%;font-weight: bold; font-family:Times New Roman; color: red; ",  
+                               column(5,style="margin-top:55px;margin-left:-220px; font-size:150%;font-weight: bold; font-family:Times New Roman; color: red; ",  
                                       textOutput("ROC_ACC_2")),
-                               column(5,style="margin-top:-30px;margin-left:800px;margin-right:0px;font-size:180%;font-weight: bold; font-family:Georgia;",  
+                               column(5,style="margin-top:50px;margin-left:-200px;margin-right:0px;font-size:180%;font-weight: bold; font-family:Georgia;",  
                                       "AUC: "),
-                               column(5,style="margin-top:-35px;margin-left:1000px;font-size:170%;font-weight: bold; font-family:Times New Roman; color: green;",  
+                               column(2,style="margin-top:55px;margin-left:-380px;font-size:150%;font-weight: bold; font-family:Times New Roman; color: green;",  
                                       textOutput("ROC_AUC_2"))),
                            box(id = "ROC_Model3", solidHeader = TRUE,collapsible = TRUE, width = "800px",height = "200px",
                                column(12,style="text-align: center; margin-top:0px;font-size:150%;font-weight: bold; font-family:Georgia;",  
@@ -351,16 +347,16 @@ ui <- shinyUI(
                                       textOutput('ROC_model_def_3')),
                                column(4,style="margin-top:50px;margin-left:180px;margin-right:0px;font-size:180%;font-weight: bold; font-family:Georgia;",  
                                       "Accuraccy: "),
-                               column(5,style="margin-top:55px;margin-left:-220px; font-size:170%;font-weight: bold; font-family:Times New Roman; color: red; ",  
+                               column(5,style="margin-top:55px;margin-left:-220px; font-size:150%;font-weight: bold; font-family:Times New Roman; color: red; ",  
                                       textOutput("ROC_ACC_3")),
-                               column(5,style="margin-top:-30px;margin-left:800px;margin-right:0px;font-size:180%;font-weight: bold; font-family:Georgia;",  
+                               column(5,style="margin-top:50px;margin-left:-200px;margin-right:0px;font-size:180%;font-weight: bold; font-family:Georgia;",  
                                       "AUC: "),
-                               column(5,style="margin-top:-35px;margin-left:1000px;font-size:150%;font-weight: bold; font-family:Times New Roman; color: green;",  
+                               column(2,style="margin-top:55px;margin-left:-380px;font-size:150%;font-weight: bold; font-family:Times New Roman; color: green;",  
                                       textOutput("ROC_AUC_3"))))
                         )),
                 tabItem("GEE_results", tabBox(
                   title = "GEE Results",
-                  id = "Results_GEE", height = "800px", width = "1000px", div(style = " font-family: Georgia; font-weight: normal; text-align: right; margin-top: 10px; margin-right: 10px",dropdownButton(includeMarkdown("Help_GEEResults.Rmd"), circle = TRUE, icon = icon('info'),size = "xs",width = "300px", up = FALSE, right = TRUE)),
+                  id = "Results_GEE", height = "800px", width = "1000px",
                   box(id = "Show_models",solidHeader = TRUE, width = 3, height = "200px",
                       column(12,style="margin-bottom:20px;font-size:120%;font-weight: bold; font-family:Georgia;",  
                              "GEE Models:  "),
@@ -368,15 +364,16 @@ ui <- shinyUI(
                              prettyRadioButtons("Models",NULL,choices = c("Model 1", "Model 2", "Model 3"),
                                                 icon = icon("check"), status = "default", shape = "curve", animation = "jelly")),
                   ), mainPanel(
-                    DT::dataTableOutput("geeresults"), style = "margin-top:-30px;margin-left:60px; height:1000px;width:1000px;"
+                    DT::dataTableOutput("geeresults"), style = " text-align: right; height:500px;width:500px;"
                   ),
-                  div(style="float:right;margin-top: -600px;padding:10px;font-size:80%;",downloadButton("Download_Results", label = "Download",style="width: 150px;color: #fff; background-color: #337ab7; border-color: #2e6da4")))
+                  div(style="float:right;margin-top: 300px;padding:10px;font-size:80%;",downloadButton("Download_Results", label = "Download",style="width: 150px;color: #fff; background-color: #337ab7; border-color: #2e6da4")))
                 ),
                 
                 #Menu informativo
-                    tabItem("Sobre",titlePanel("About SAGA"),
+                    tabItem("Sobre",titlePanel("About"),
                             br(),
-                            div(includeMarkdown("Help_About.Rmd"))
+                            div(includeMarkdown("Help_About.Rmd"), 
+                                align="justify")
                      
                     )
                 
@@ -482,9 +479,7 @@ server <- function(input, output, session) {
     observeEvent(input$Facbtn,{
       df = currentable$tab1
       for (i in input$Facol){
-        name_col = i
-        facol = as.factor(df[[name_col]])
-        df[[name_col]] = facol
+        df[, i] <- as.factor(df[,i])
       }
       lasttable$tab1 = currentable$tab1
       currentable$tab1 = df
@@ -492,11 +487,6 @@ server <- function(input, output, session) {
     
     
     observeEvent(input$ADDbutton, {
-      updateTabsetPanel(session, 'sidebarmenu',
-                        selected = "Select")
-    })
-    
-    observeEvent(input$ADDbutton_3, {
       updateTabsetPanel(session, 'sidebarmenu',
                         selected = "Select")
     })
@@ -529,18 +519,18 @@ server <- function(input, output, session) {
               }
               identification = input$ID
               gee_Ind = geeglm(form,data = df,id = df[[identification]],family = input$Family,corstr = "independence")
-              qic_ind = QIC(gee_Ind)[1]
-              qicu_ind = QIC(gee_Ind)[2]
+              qic_ind = MESS::QIC(gee_Ind)[1]
+              qicu_ind = MESS::QIC(gee_Ind)[2]
               names(qic_ind) <- NULL
               names(qicu_ind) <- NULL
               gee_Exch = geeglm(formula = form,data = df,id = df[[identification]],family = input$Family,corstr = "exchangeable")
-              qic_Exch = QIC(gee_Exch)[1]
-              qicu_Exch = QIC(gee_Exch)[2]
+              qic_Exch = MESS::QIC(gee_Exch)[1]
+              qicu_Exch = MESS::QIC(gee_Exch)[2]
               names(qic_Exch) <- NULL
               names(qicu_Exch) <- NULL
               gee_Ar = geeglm(formula = form,data = df,id = df[[identification]],family = input$Family,corstr = "ar1")
-              qic_Ar = QIC(gee_Ar)[1]
-              qicu_Ar = QIC(gee_Ar)[2]
+              qic_Ar = MESS::QIC(gee_Ar)[1]
+              qicu_Ar = MESS::QIC(gee_Ar)[2]
               names(qic_Ar) <- NULL
               names(qicu_Ar) <- NULL
               #gee_Un = geeglm(formula = form,data = df,id = df[[identification]],family = input$Family,corstr = "unstructured")
@@ -576,16 +566,6 @@ server <- function(input, output, session) {
         return(s)
       }
       
-      observe({
-        shinyjs:: hide("Savebutton")
-        shinyjs:: disable("Savebutton")
-        if (input$Editbutton){
-          shinyjs:: show("Savebutton")
-          shinyjs:: enable("Savebutton")
-          shinyjs:: hide("MDbutton")
-          shinyjs:: disable("MDbutton")
-        }
-      })
       
       
       #Values for 1st model
@@ -600,139 +580,107 @@ server <- function(input, output, session) {
       
       lastboxcreated <- reactiveValues(boxname= NULL)
       lastbox <- reactiveValues(lastBox = NULL, currentBox = NULL)
-      ADDclick = reactiveValues(num = 0)
-      ADD3click = reactiveValues(num = 0)
       
-      savemodel <- function(){
+      observeEvent(input$MDbutton,{
+        if (input$MDbutton == 1){
+          shinyjs::hide(id = "Model_2")
+          shinyjs::hide(id = "Model_3")
           boxvalues1$mn <- input$Model_name
           boxvalues1$md <- input$Model_description
           boxvalues1$vr <- input$VR
           if(input$Coexpression == ""){
             boxvalues1$co <- input$Variables
-            boxvalues1$coex <- NULL
           }
           else{
             boxvalues1$coex <- input$Coexpression
-            boxvalues1$co <- NULL
           }
           boxvalues1$id <- input$ID
           boxvalues1$fm <- input$Family
           boxvalues1$cs <- input$CS
-      }
-      
-      savemodel_2 <- function(){
-        boxvalues2$mn <- input$Model_name
-        boxvalues2$md <- input$Model_description
-        boxvalues2$vr <- input$VR
-        if(input$Coexpression == ""){
-          boxvalues2$co <- input$Variables
-          boxvalues2$coex <- NULL
-        }
-        else{
-          boxvalues2$coex <- input$Coexpression
-          boxvalues2$co <- NULL
-        }
-        boxvalues2$id <- input$ID
-        boxvalues2$fm <- input$Family
-        boxvalues2$cs <- input$CS
-      }
-      
-      savemodel_3 <- function(){
-        boxvalues3$mn <- input$Model_name
-        boxvalues3$md <- input$Model_description
-        boxvalues3$vr <- input$VR
-        if(input$Coexpression == ""){
-          boxvalues3$co <- input$Variables
-          boxvalues3$coex <- NULL
-        }
-        else{
-          boxvalues3$coex <- input$Coexpression
-          boxvalues3$co <- NULL
-        }
-        boxvalues3$id <- input$ID
-        boxvalues3$fm <- input$Family
-        boxvalues3$cs <- input$CS
-      }
-      
-      
-      
-      show_model <- function(use){
-          if(use == 'now' ){
-            output$values <- renderText({
-              input$Model_name
-            })
-            output$des <- renderText({
-              input$Model_description
-            })
-            output$vr <- renderText({
-              paste('<b>Response Variable: ',"</b>", input$VR)
-            })
-            if(input$Coexpression == ""){
-              output$co <- renderText({
-                paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
-              })
-            }
-            else{
-              output$co <- renderText({
-                paste('<b>Covariates: ' ,"</b>", input$Coexpression )
-              })
-            }
-            
-            output$id <- renderText({
-              paste('<b>ID: ' , "</b>", input$ID)
-            })
-            output$family <- renderText({
-              paste('<b>Family: ', "</b>", input$Family)
-            })
-            output$cs <- renderText({
-              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
+          output$values <- renderText({
+            input$Model_name
+          })
+          output$des <- renderText({
+            input$Model_description
+          })
+          output$vr <- renderText({
+            paste('<b>Response Variable: ',"</b>", input$VR)
+          })
+          if(input$Coexpression == ""){
+            output$co <- renderText({
+              paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
             })
           }
-          else if(use == 'old'){
-            output$values <- renderText({
-              boxvalues1$mn
-            })
-            output$des <- renderText({
-              boxvalues1$md
-            })
-            output$vr <- renderText({
-              paste('<b>Response Variable: ',"</b>", boxvalues1$vr)
-            })
-            if(is.null(boxvalues1$coex)){
-              output$co <- renderText({
-                paste('<b>Covariates: ' ,"</b>", result_s(boxvalues1$co) )
-              })
-            }
-            else{
-              output$co <- renderText({
-                paste('<b>Covariates: ' ,"</b>", boxvalues1$coex )
-              })
-            }
-            
-            output$id <- renderText({
-              paste('<b>ID: ' , "</b>", boxvalues1$id)
-            })
-            output$family <- renderText({
-              paste('<b>Family: ', "</b>", boxvalues1$fm)
-            })
-            output$cs <- renderText({
-              paste('<b>Correlation Structure: ' ,"</b>", boxvalues1$cs)
+          else{
+            output$co <- renderText({
+              paste('<b>Covariates: ' ,"</b>", input$Coexpression )
             })
           }
-      }
           
+          output$id <- renderText({
+            paste('<b>ID: ' , "</b>", input$ID)
+          })
+          output$family <- renderText({
+            paste('<b>Family: ', "</b>", input$Family)
+          })
+          output$cs <- renderText({
+            paste('<b>Correlation Structure: ' ,"</b>", input$CS)
+          })
+          updatePrettyCheckbox(session,"Select_Model", value = TRUE)
+          lastboxcreated$boxname = 'box1'
+          print(lastboxcreated$boxname)
+        }
+      })
       
-      show_model_2 <- function(use){
-        if(use == 'now'){
-            output$values_2 <- renderText({
-              input$Model_name
+      
+      #ADD button functions
+      observeEvent(input$ADDbutton,{
+        if (input$ADDbutton == 1){
+          print(boxvalues2$mn)
+          shinyjs::show("Model_2")
+          output$values <- renderText({
+            boxvalues1$mn
+          })
+          output$des <- renderText({
+            boxvalues1$md
+          })
+          output$vr <- renderText({
+            paste('<b>Response Variable: ',"</b>", boxvalues1$vr)
+          })
+          if(is.null(boxvalues1$coex)){
+            output$co <- renderText({
+              paste('<b>Covariates: ' ,"</b>", result_s(boxvalues1$co) )
             })
-            output$des_2 <- renderText({
-              input$Model_description
+          }
+          else{
+            output$co <- renderText({
+              paste('<b>Covariates: ' ,"</b>", boxvalues1$coex )
             })
-            output$vr_2 <- renderText({
-              paste('<b>Response Variable: ',"</b>", input$VR)
-            })
+          }
+          output$id <- renderText({
+            paste('<b>ID: ' , "</b>", boxvalues1$id)
+          })
+          output$family <- renderText({
+            paste('<b>Family: ', "</b>", boxvalues1$fm)
+          })
+          output$cs <- renderText({
+            paste('<b>Correlation Structure: ' ,"</b>", boxvalues1$cs)
+          })
+          updateCheckboxGroupInput(session, "Variables", selected = character(0))
+          updateTextAreaInput(session, "Coexpression", value = "")
+          updateTextInput(session, "Model_name", value = "")
+          updateTextAreaInput(session,"Model_description",value = "")
+          updatePrettyCheckbox(session,"QIC_Show", value = FALSE)
+          output$values_2 <- renderText({
+            input$Model_name
+          })
+          output$des_2 <- renderText({
+            input$Model_description
+          })
+          output$vr_2 <- renderText({
+            paste('<b>Response Variable: ',"</b>", input$VR)
+          })
+          observeEvent(input$Covariablebutton, {
             if(input$Coexpression == ""){
               output$co_2 <- renderText({
                 paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
@@ -743,19 +691,50 @@ server <- function(input, output, session) {
                 paste('<b>Covariates: ' ,"</b>", input$Coexpression )
               })
             }
-            
-            output$id_2 <- renderText({
-              paste('<b>ID: ' , "</b>", input$ID)
-            })
-            output$family_2 <- renderText({
-              paste('<b>Family: ', "</b>", input$Family)
-            })
-            output$cs_2 <- renderText({
-              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
-            })
+          })
+          print(input$Coexpression)
+          print(input$Variables)
+          output$id_2 <- renderText({
+            paste('<b>ID: ' , "</b>", input$ID)
+          })
+          output$family_2 <- renderText({
+            paste('<b>Family: ', "</b>", input$Family)
+          })
+          output$cs_2 <- renderText({
+            paste('<b>Correlation Structure: ' ,"</b>", input$CS)
+          })
+          updatePrettyCheckbox(session,"Select_Model", value = FALSE)
+          updatePrettyCheckbox(session,"Select_Model_2", value = TRUE)
+          lastboxcreated$boxname = 'box2'
+          print(lastboxcreated$boxname)
+          observeEvent(input$MDbutton,{
+            boxvalues2$mn <- input$Model_name
+            boxvalues2$md <- input$Model_description
+            boxvalues2$vr <- input$VR
+            if(input$Coexpression == ""){
+              boxvalues2$co <- input$Variables
+            }
+            else{
+              boxvalues2$coex <- input$Coexpression
+            }
+            boxvalues2$id <- input$ID
+            boxvalues2$fm <- input$Family
+            boxvalues2$cs <- input$CS
+          })
           
         }
-        else if (use == 'old'){
+        else if(input$ADDbutton == 2){
+          shinyjs::show("Model_3")
+          shinyjs::disable("ADDbutton")
+          
+          print(boxvalues2$mn)
+          print(boxvalues2$md)
+          print(boxvalues2$vr)
+          print(boxvalues2$co)
+          print(boxvalues2$coex)
+          print(boxvalues2$fm)
+          print(boxvalues2$cs)
+          print(boxvalues2$id)
           output$values_2 <- renderText({
             boxvalues2$mn
           })
@@ -775,7 +754,6 @@ server <- function(input, output, session) {
               paste('<b>Covariates: ' ,"</b>", boxvalues2$coex )
             })
           }
-          
           output$id_2 <- renderText({
             paste('<b>ID: ' , "</b>", boxvalues2$id)
           })
@@ -785,22 +763,23 @@ server <- function(input, output, session) {
           output$cs_2 <- renderText({
             paste('<b>Correlation Structure: ' ,"</b>", boxvalues2$cs)
           })
-        }
-      }
-      
-      
-      show_model_3 <- function(use){
-        if(use == 'now'){
-            output$values_3 <- renderText({
-              input$Model_name
-            })
-            output$des_3 <- renderText({
-              input$Model_description
-            })
-            output$vr_3 <- renderText({
-              paste('<b>Response Variable: ',"</b>", input$VR)
-            })
-            if(input$Coexpression == ""){
+          updateCheckboxGroupInput(session, "Variables", selected = character(0))
+          updateTextAreaInput(session, "Coexpression", value = "")
+          updateTextInput(session, "Model_name", value = "")
+          updateTextAreaInput(session,"Model_description",value = "")
+          updatePrettyCheckbox(session,"QIC_Show", value = FALSE)
+          output$values_3 <- renderText({
+            input$Model_name
+            print(boxvalues2$mn)
+          })
+          output$des_3 <- renderText({
+            input$Model_description
+            print(boxvalues2$md)
+          })
+          output$vr_3 <- renderText({
+            paste('<b>Response Variable: ',"</b>", input$VR)
+          })
+          if(input$Coexpression == ""){
               output$co_3 <- renderText({
                 paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
               })
@@ -810,135 +789,21 @@ server <- function(input, output, session) {
                 paste('<b>Covariates: ' ,"</b>", input$Coexpression )
               })
             }
-            
-            output$id_3 <- renderText({
-              paste('<b>ID: ' , "</b>", input$ID)
-            })
-            output$family_3 <- renderText({
-              paste('<b>Family: ', "</b>", input$Family)
-            })
-            output$cs_3 <- renderText({
-              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
-            })
-          
-        }
-        else if (use == 'old'){
-          output$values_3 <- renderText({
-            boxvalues3$mn
-          })
-          output$des_3 <- renderText({
-            boxvalues3$md
-          })
-          output$vr_3 <- renderText({
-            paste('<b>Response Variable: ',"</b>", boxvalues3$vr)
-          })
-          if(is.null(boxvalues3$coex)){
-            output$co_3 <- renderText({
-              paste('<b>Covariates: ' ,"</b>", result_s(boxvalues3$co) )
-            })
-          }
-          else{
-            output$co_3 <- renderText({
-              paste('<b>Covariates: ' ,"</b>", boxvalues3$coex )
-            })
-          }
-          
           output$id_3 <- renderText({
-            paste('<b>ID: ' , "</b>", boxvalues3$id)
+            paste('<b>ID: ' , "</b>", input$ID)
           })
           output$family_3 <- renderText({
-            paste('<b>Family: ', "</b>", boxvalues3$fm)
+            paste('<b>Family: ', "</b>", input$Family)
           })
           output$cs_3 <- renderText({
-            paste('<b>Correlation Structure: ' ,"</b>", boxvalues3$cs)
+            paste('<b>Correlation Structure: ' ,"</b>", input$CS)
           })
-        }
-      }
-      
-      
-      
-      observeEvent(input$MDbutton,{
-        if (input$MDbutton == 1){
-          shinyjs::hide(id = "Model_2")
-          shinyjs::hide(id = "Model_3")
-          savemodel()
-          show_model('now')
-          updatePrettyCheckbox(session,"Select_Model", value = TRUE)
-          lastboxcreated$boxname = 'box1'
-          print(lastboxcreated$boxname)
-          shinyjs::hide("ADDbutton_3")
-          shinyjs::disable("ADDbutton_3")
-        }
-        if ((ADDclick$num == 1) ){
-          shinyjs::show("Model_2")
-          print(boxvalues1$mn)
-          print(boxvalues1$co)
-          show_model('old')
-          savemodel_2()
-          show_model_2('now')
-          updatePrettyCheckbox(session,"Select_Model", value = FALSE)
-          updatePrettyCheckbox(session,"Select_Model_2", value = TRUE)
-          lastboxcreated$boxname = 'box2'
-          shinyjs::hide("ADDbutton")
-          shinyjs::disable("ADDbutton")
-          shinyjs::show("ADDbutton_3")
-          shinyjs::enable("ADDbutton_3")
-          ADDclick$num <- 0
-          
-        }
-        if ((ADD3click$num == 1) ){
-          shinyjs::show("Model_3")
-          shinyjs::disable("ADDbutton_3")
-          show_model_2('old')
-          show_model_3('now')
           updatePrettyCheckbox(session,"Select_Model_2", value = FALSE)
           updatePrettyCheckbox(session,"Select_Model_3", value = TRUE)
           lastboxcreated$boxname = 'box3'
-          savemodel_3()
-          ADD3click$num <- 0
-          shinyjs::hide("ADDbutton")
-          shinyjs::disable("ADDbutton")
-          shinyjs::show("ADDbutton_3")
-          shinyjs::enable("ADDbutton_3")
+          print(lastboxcreated$boxname)
           
         }
-      })
-      
-      
-      
-      #ADD button functions
-      observeEvent(input$ADDbutton,{
-          shinyjs::show("Model_2")
-          shinyjs::hide("Savebutton")
-          shinyjs::disable("Savebutton")
-          shinyjs::show("MDbutton")
-          shinyjs::enable("MDbutton")
-          updateCheckboxGroupInput(session, "Variables", selected = character(0))
-          updateTextAreaInput(session, "Coexpression", value = "")
-          updateTextInput(session, "Model_name", value = "")
-          updateTextAreaInput(session,"Model_description",value = "")
-          updatePrettyCheckbox(session,"QIC_Show", value = FALSE)
-          ADDclick$num <- 1
-      })
-      
-      
-      
-      
-      observeEvent(input$ADDbutton_3,{
-        if(input$ADDbutton_3 == 1){
-          shinyjs::hide("Savebutton")
-          shinyjs::disable("Savebutton")
-          shinyjs::show("MDbutton")
-          shinyjs::enable("MDbutton")
-          updateCheckboxGroupInput(session, "Variables", selected = character(0))
-          updateTextAreaInput(session, "Coexpression", value = "")
-          updateTextInput(session, "Model_name", value = "")
-          updateTextAreaInput(session,"Model_description",value = "")
-          updatePrettyCheckbox(session,"QIC_Show", value = FALSE)
-          ADD3click$num <- 1
-        }
-        
-        
       })
       
       observe({
@@ -1007,9 +872,37 @@ server <- function(input, output, session) {
             updateTextInput(session, "Model_name", value = boxvalues1$mn)
             updateTextAreaInput(session,"Model_description",value = boxvalues1$md)
             updatePrettyCheckbox(session,"QIC_Show", value = FALSE)
-            observeEvent(input$Savebutton,{  
-              show_model('now')
-              savemodel()
+            output$values <- renderText({
+              input$Model_name
+            })
+            output$des <- renderText({
+              input$Model_description
+            })
+            output$vr <- renderText({
+              paste('<b>Response Variable: ',"</b>", input$VR)
+            })
+            observeEvent(input$Covariablebutton,{
+              if (input$Coexpression == ""){
+                output$co <- renderText({
+                  paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
+                })
+                boxvalues1$coex <- NULL
+              }
+              else{
+                output$co <- renderText({
+                  paste('<b>Covariates: ' ,"</b>", input$Coexpression )
+                })
+                boxvalues1$co <- NULL
+              }
+            })
+            output$id <- renderText({
+              paste('<b>ID: ' , "</b>", input$ID)
+            })
+            output$family <- renderText({
+              paste('<b>Family: ', "</b>", input$Family)
+            })
+            output$cs <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
             })
             lastboxcreated$boxname = "box1"
           }
@@ -1023,25 +916,66 @@ server <- function(input, output, session) {
             updateTextInput(session, "Model_name", value = boxvalues2$mn)
             updateTextAreaInput(session,"Model_description",value = boxvalues2$md)
             updatePrettyCheckbox(session,"QIC_Show", value = FALSE)
-            observeEvent(input$Savebutton,{
-              show_model_2('now')
-              savemodel_2()
+            output$values_2 <- renderText({
+              input$Model_name
+            })
+            output$des_2 <- renderText({
+              input$Model_description
+            })
+            output$vr_2 <- renderText({
+              paste('<b>Response Variable: ',"</b>", input$VR)
+            })
+            if (input$Coexpression == ""){
+              output$co_2 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
+              })
+            }
+            else{
+              output$co_2 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", input$Coexpression )
+              })
+            }
+            output$id_2 <- renderText({
+              paste('<b>ID: ' , "</b>", input$ID)
+            })
+            output$family_2 <- renderText({
+              paste('<b>Family: ', "</b>", input$Family)
+            })
+            output$cs_2 <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
             })
             lastboxcreated$boxname = "box2"
           }
           else if (lastbox$currentBox == 'box3'){
-            if(is.null(boxvalues3$coex)){
-              updateCheckboxGroupInput(session, "Variables", selected = boxvalues3$co)
-            }
-            else{
-              updateTextAreaInput(session, "Coexpression", value = boxvalues3$coex)
-            }
-            updateTextInput(session, "Model_name", value = boxvalues3$mn)
-            updateTextAreaInput(session,"Model_description",value = boxvalues3$md)
-            updatePrettyCheckbox(session,"QIC_Show", value = FALSE)
-            observeEvent(input$Savebutton,{
-              show_model_3('now')
-              savemodel_3()
+            output$values_3 <- renderText({
+              input$Model_name
+            })
+            output$des_3 <- renderText({
+              input$Model_description
+            })
+            output$vr_3 <- renderText({
+              paste('<b>Response Variable: ',"</b>", input$VR)
+            })
+            observeEvent(input$Covariablebutton,{
+              if (input$Coexpression == ""){
+                output$co_3 <- renderText({
+                  paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
+                })
+              }
+              else{
+                output$co_3 <- renderText({
+                  paste('<b>Covariates: ' ,"</b>", input$Coexpression )
+                })
+              }
+            })
+            output$id_3 <- renderText({
+              paste('<b>ID: ' , "</b>", input$ID)
+            })
+            output$family_3 <- renderText({
+              paste('<b>Family: ', "</b>", input$Family)
+            })
+            output$cs_3 <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
             })
             lastboxcreated$boxname = "box3"
           }
@@ -1058,23 +992,173 @@ server <- function(input, output, session) {
           updateTextAreaInput(session,"Model_description",value = boxvalues1$md)
           updatePrettyCheckbox(session,"QIC_Show", value = FALSE)
           if(lastboxcreated$boxname == "box1"){
-            observeEvent(input$Savebutton,{
-              show_model('now')
-              savemodel()
+            output$values <- renderText({
+              input$Model_name
+            })
+            output$des <- renderText({
+              input$Model_description
+            })
+            output$vr <- renderText({
+              paste('<b>Response Variable: ',"</b>", input$VR)
+            })
+            if (input$Coexpression == ""){
+              output$co <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
+              })
+            }
+            else{
+              output$co <- renderText({
+                paste('<b>Covariates: ' ,"</b>", input$Coexpression )
+              })
+            }
+            output$id <- renderText({
+              paste('<b>ID: ' , "</b>", input$ID)
+            })
+            output$family <- renderText({
+              paste('<b>Family: ', "</b>", input$Family)
+            })
+            output$cs <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
             })
           }
           else if(lastboxcreated$boxname == "box2"){
-            show_model_2('old')
-            observeEvent(input$Savebutton, {
-              show_model('now')
-              savemodel()
+            boxvalues2$mn <- input$Model_name
+            boxvalues2$md <- input$Model_description
+            boxvalues2$vr <- input$VR
+            if (input$Coexpression == ""){
+              boxvalues2$co <- input$Variables
+            }
+            else{
+              boxvalues2$coex <- input$Coexpression
+            }
+            boxvalues2$id <- input$ID
+            boxvalues2$fm <- input$Family
+            boxvalues2$cs <- input$CS
+            output$values_2 <- renderText({
+              boxvalues2$mn
+            })
+            output$des_2 <- renderText({
+              boxvalues2$md
+            })
+            output$vr_2 <- renderText({
+              paste('<b>Response Variable: ',"</b>", boxvalues2$vr)
+            })
+            if (is.null(boxvalues2$coex)){
+              output$co_2 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(boxvalues2$co) )
+              })
+            }
+            else{
+              output$co_2 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", boxvalues2$coex )
+              })
+            }
+            output$id_2 <- renderText({
+              paste('<b>ID: ' , "</b>", boxvalues2$id)
+            })
+            output$family_2 <- renderText({
+              paste('<b>Family: ', "</b>", boxvalues2$fm)
+            })
+            output$cs_2 <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", boxvalues2$cs)
+            })
+            output$values <- renderText({
+              input$Model_name
+            })
+            output$des <- renderText({
+              input$Model_description
+            })
+            output$vr <- renderText({
+              paste('<b>Response Variable: ',"</b>", input$VR)
+            })
+            if (input$Coexpression == ""){
+              output$co <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
+              })
+            }
+            else{
+              output$co <- renderText({
+                paste('<b>Covariates: ' ,"</b>", input$Coexpression )
+              })
+            }
+            output$id <- renderText({
+              paste('<b>ID: ' , "</b>", input$ID)
+            })
+            output$family <- renderText({
+              paste('<b>Family: ', "</b>", input$Family)
+            })
+            output$cs <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
             })
           }
           else if(lastboxcreated$boxname == "box3"){
-            show_model_3('old')
-            observeEvent(input$Savebutton, {
-              show_model('now')
-              savemodel()
+            boxvalues3$mn <- input$Model_name
+            boxvalues3$md <- input$Model_description
+            boxvalues3$vr <- input$VR
+            if (input$Coexpression == ""){
+              boxvalues3$co <- input$Variables
+            }
+            else{
+              boxvalues3$coex <- input$Coexpression
+            }
+            boxvalues3$id <- input$ID
+            boxvalues3$fm <- input$Family
+            boxvalues3$cs <- input$CS
+            output$values_3 <- renderText({
+              boxvalues3$mn
+            })
+            output$des_3 <- renderText({
+              boxvalues3$md
+            })
+            output$vr_3 <- renderText({
+              paste('<b>Response Variable: ',"</b>", boxvalues3$vr)
+            })
+            if (is.null(boxvalues3$coex)){
+              output$co_3 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(boxvalues3$co) )
+              })
+            }
+            else{
+              output$co_3 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", boxvalues3$coex )
+              })
+            }
+            output$id_3 <- renderText({
+              paste('<b>ID: ' , "</b>", boxvalues3$id)
+            })
+            output$family_3 <- renderText({
+              paste('<b>Family: ', "</b>", boxvalues3$fm)
+            })
+            output$cs_3 <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", boxvalues3$cs)
+            })
+            output$values <- renderText({
+              input$Model_name
+            })
+            output$des <- renderText({
+              input$Model_description
+            })
+            output$vr <- renderText({
+              paste('<b>Response Variable: ',"</b>", input$VR)
+            })
+            if (input$Coexpression == ""){
+              output$co <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
+              })
+            }
+            else{
+              output$co <- renderText({
+                paste('<b>Covariates: ' ,"</b>", input$Coexpression )
+              })
+            }
+            output$id <- renderText({
+              paste('<b>ID: ' , "</b>", input$ID)
+            })
+            output$family <- renderText({
+              paste('<b>Family: ', "</b>", input$Family)
+            })
+            output$cs <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
             })
           }
           lastboxcreated$boxname = "box1"
@@ -1090,26 +1174,177 @@ server <- function(input, output, session) {
           updateTextAreaInput(session,"Model_description",value = boxvalues2$md)
           updatePrettyCheckbox(session,"QIC_Show", value = FALSE)
           if(lastboxcreated$boxname == "box2"){
-            observeEvent(input$Savebutton,{
-              show_model_2('now')
-              savemodel_2()
+            output$values_2 <- renderText({
+              input$Model_name
+            })
+            output$des_2 <- renderText({
+              input$Model_description
+            })
+            output$vr_2 <- renderText({
+              paste('<b>Response Variable: ',"</b>", input$VR)
+            })
+            if (input$Coexpression == ""){
+              output$co_2 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
+              })
+            }
+            else{
+              output$co_2 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", input$Coexpression )
+              })
+            }
+            output$id_2 <- renderText({
+              paste('<b>ID: ' , "</b>", input$ID)
+            })
+            output$family_2 <- renderText({
+              paste('<b>Family: ', "</b>", input$Family)
+            })
+            output$cs_2 <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
             })
           }
           else if(lastboxcreated$boxname == "box1"){
-            show_model('old')
-            observeEvent(input$Savebutton,{
-              show_model_2('now')
-              savemodel_2()
+            boxvalues1$mn <- input$Model_name
+            boxvalues1$md <- input$Model_description
+            boxvalues1$vr <- input$VR
+            if (input$Coexpression == ""){
+              boxvalues1$co <- input$Variables
+            }
+            else{
+              boxvalues1$coex <- input$Coexpression
+            }
+            boxvalues1$id <- input$ID
+            boxvalues1$fm <- input$Family
+            boxvalues1$cs <- input$CS
+            output$values <- renderText({
+              boxvalues1$mn
+            })
+            output$des <- renderText({
+              boxvalues1$md
+            })
+            output$vr <- renderText({
+              paste('<b>Response Variable: ',"</b>", boxvalues1$vr)
+            })
+            if (is.null(boxvalues1$coex)){
+              output$co <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(boxvalues1$co) )
+              })
+            }
+            else{
+              output$co <- renderText({
+                paste('<b>Covariates: ' ,"</b>", boxvalues1$coex )
+              })
+            }
+            output$id <- renderText({
+              paste('<b>ID: ' , "</b>", boxvalues1$id)
+            })
+            output$family <- renderText({
+              paste('<b>Family: ', "</b>", boxvalues1$fm)
+            })
+            output$cs <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", boxvalues1$cs)
+            })
+            output$values_2 <- renderText({
+              input$Model_name
+            })
+            output$des_2 <- renderText({
+              input$Model_description
+            })
+            output$vr_2 <- renderText({
+              paste('<b>Response Variable: ',"</b>", input$VR)
+            })
+            if (input$Coexpression == ""){
+              output$co_2 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
+              })
+            }
+            else{
+              output$co_2 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", input$Coexpression )
+              })
+            }
+            output$id_2 <- renderText({
+              paste('<b>ID: ' , "</b>", input$ID)
+            })
+            output$family_2 <- renderText({
+              paste('<b>Family: ', "</b>", input$Family)
+            })
+            output$cs_2 <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
             })
           }
           else if(lastboxcreated$boxname == "box3"){
-            show_model_3('old')
-            observeEvent(input$Savebutton,{
-              show_model_2('now')
-              savemodel_2()
+            boxvalues3$mn <- input$Model_name
+            boxvalues3$md <- input$Model_description
+            boxvalues3$vr <- input$VR
+            if (input$Coexpression == ""){
+              boxvalues3$co <- input$Variables
+            }
+            else{
+              boxvalues3$coex <- input$Coexpression
+            }
+            boxvalues3$id <- input$ID
+            boxvalues3$fm <- input$Family
+            boxvalues3$cs <- input$CS
+            output$values_3 <- renderText({
+              boxvalues3$mn
+            })
+            output$des_3 <- renderText({
+              boxvalues3$md
+            })
+            output$vr_3 <- renderText({
+              paste('<b>Response Variable: ',"</b>", boxvalues3$vr)
+            })
+            if (is.null(boxvalues3$coex)){
+              output$co_3 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(boxvalues3$co) )
+              })
+            }
+            else{
+              output$co_3 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", boxvalues3$coex )
+              })
+            }
+            output$id_3 <- renderText({
+              paste('<b>ID: ' , "</b>", boxvalues3$id)
+            })
+            output$family_3 <- renderText({
+              paste('<b>Family: ', "</b>", boxvalues3$fm)
+            })
+            output$cs_3 <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", boxvalues3$cs)
+            })
+            output$values_2 <- renderText({
+              input$Model_name
+            })
+            output$des_2 <- renderText({
+              input$Model_description
+            })
+            output$vr_2 <- renderText({
+              paste('<b>Response Variable: ',"</b>", input$VR)
+            })
+            if (input$Coexpression == ""){
+              output$co_2 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
+              })
+            }
+            else{
+              output$co_2 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", input$Coexpression )
+              })
+            }
+            output$id_2 <- renderText({
+              paste('<b>ID: ' , "</b>", input$ID)
+            })
+            output$family_2 <- renderText({
+              paste('<b>Family: ', "</b>", input$Family)
+            })
+            output$cs_2 <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
             })
           }
           lastboxcreated$boxname = "box2"
+          
         }
         else if(input$"Select_Model_3"){
           if (is.null(boxvalues3$coex)){
@@ -1122,23 +1357,176 @@ server <- function(input, output, session) {
           updateTextAreaInput(session,"Model_description",value = boxvalues3$md)
           updatePrettyCheckbox(session,"QIC_Show", value = FALSE)
           if(lastboxcreated$boxname == "box3"){
-            observeEvent(input$Savebutton,{
-              show_model_3('now')
-              savemodel_3()
+            output$values_3 <- renderText({
+              input$Model_name
+            })
+            output$des_3 <- renderText({
+              input$Model_description
+            })
+            output$vr_3 <- renderText({
+              paste('<b>Response Variable: ',"</b>", input$VR)
+            })
+            if (input$Coexpression == ""){
+              output$co_3 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
+              })
+            }
+            else{
+              output$co_3 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", input$Coexpression )
+              })
+            }
+            output$id_3 <- renderText({
+              paste('<b>ID: ' , "</b>", input$ID)
+            })
+            output$family_3 <- renderText({
+              paste('<b>Family: ', "</b>", input$Family)
+            })
+            output$cs_3 <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
             })
           }
           else if(lastboxcreated$boxname == "box1"){
-            show_model('old')
-            observeEvent(input$Savebutton,{
-              show_model_3('now')
-              savemodel_3()
+            boxvalues1$mn <- input$Model_name
+            boxvalues1$md <- input$Model_description
+            boxvalues1$vr <- input$VR
+            if (input$Coexpression == ""){
+              boxvalues1$co <- input$Variables
+            }
+            else{
+              boxvalues1$coex <- input$Coexpression
+            }
+            boxvalues1$id <- input$ID
+            boxvalues1$fm <- input$Family
+            boxvalues1$cs <- input$CS
+            output$values <- renderText({
+              boxvalues1$mn
+            })
+            output$des <- renderText({
+              boxvalues1$md
+            })
+            output$vr <- renderText({
+              paste('<b>Response Variable: ',"</b>", boxvalues1$vr)
+            })
+            if (is.null(boxvalues1$coex)){
+              output$co <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(boxvalues1$co) )
+              })
+            }
+            else{
+              output$co <- renderText({
+                paste('<b>Covariates: ' ,"</b>", boxvalues1$coex )
+              })
+            }
+            output$id <- renderText({
+              paste('<b>ID: ' , "</b>", boxvalues1$id)
+            })
+            output$family <- renderText({
+              paste('<b>Family: ', "</b>", boxvalues1$fm)
+            })
+            output$cs <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", boxvalues1$cs)
+            })
+            output$values_3 <- renderText({
+              input$Model_name
+            })
+            output$des_3 <- renderText({
+              input$Model_description
+            })
+            output$vr_3 <- renderText({
+              paste('<b>Response Variable: ',"</b>", input$VR)
+            })
+            if (input$Coexpression == ""){
+              output$co_3 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
+              })
+            }
+            else{
+              output$co_3 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", input$Coexpression )
+              })
+            }
+            output$id_3 <- renderText({
+              paste('<b>ID: ' , "</b>", input$ID)
+            })
+            output$family_3 <- renderText({
+              paste('<b>Family: ', "</b>", input$Family)
+            })
+            output$cs_3 <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
             })
           }
           else if(lastboxcreated$boxname == "box2"){
-            show_model_2('old')
-            observeEvent(input$Savebutton,{
-              show_model_3('now')
-              savemodel_3()
+            boxvalues2$mn <- input$Model_name
+            boxvalues2$md <- input$Model_description
+            boxvalues2$vr <- input$VR
+            if (input$Coexpression == ""){
+              boxvalues2$co <- input$Variables
+            }
+            else{
+              boxvalues2$coex <- input$Coexpression
+            }
+            boxvalues2$id <- input$ID
+            boxvalues2$fm <- input$Family
+            boxvalues2$cs <- input$CS
+            output$values_2 <- renderText({
+              boxvalues2$mn
+            })
+            output$des_2 <- renderText({
+              boxvalues2$md
+            })
+            output$vr_2 <- renderText({
+              paste('<b>Response Variable: ',"</b>", boxvalues2$vr)
+            })
+            if (is.null(boxvalues2$coex)){
+              output$co_2 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(boxvalues2$co) )
+              })
+            }
+            else{
+              output$co_2 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", boxvalues2$coex )
+              })
+            }
+            output$co_2 <- renderText({
+              paste('<b>Covariates: ' ,"</b>", result_s(boxvalues2$co) )
+            })
+            output$id_2 <- renderText({
+              paste('<b>ID: ' , "</b>", boxvalues2$id)
+            })
+            output$family_2 <- renderText({
+              paste('<b>Family: ', "</b>", boxvalues2$fm)
+            })
+            output$cs_2 <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", boxvalues2$cs)
+            })
+            output$values_3 <- renderText({
+              input$Model_name
+            })
+            output$des_3 <- renderText({
+              input$Model_description
+            })
+            output$vr_3 <- renderText({
+              paste('<b>Response Variable: ',"</b>", input$VR)
+            })
+            if (input$Coexpression == ""){
+              output$co_3 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", result_s(input$Variables) )
+              })
+            }
+            else{
+              output$co_3 <- renderText({
+                paste('<b>Covariates: ' ,"</b>", input$Coexpression )
+              })
+            }
+            output$id_3 <- renderText({
+              paste('<b>ID: ' , "</b>", input$ID)
+            })
+            output$family_3 <- renderText({
+              paste('<b>Family: ', "</b>", input$Family)
+            })
+            output$cs_3 <- renderText({
+              paste('<b>Correlation Structure: ' ,"</b>", input$CS)
             })
           }
           lastboxcreated$boxname = "box3"
@@ -2039,28 +2427,23 @@ server <- function(input, output, session) {
       ROC_Analysis <- function(train,test,model){
         if (is.null(model$coex)){
           cov = result_s(model$co)
-          print(cov)
         }
         else{
           cov = model$coex
-          print(cov)
         }
-        identification <<- model$id
-        cs = tolower(model$cs)
         form = as.formula(paste(model$vr,'~',cov,collapse = ""))
-        geemodel <<- geeglm(form,data = train,id =train[[identification]] ,family = model$fm,corstr = cs)
-        pred_70_30_1 = predict(geemodel,test,type="response")
-        plotroc = roc(test[[model$vr]], pred_70_30_1)
-        pred_70_30 = prediction(pred_70_30_1, test[[model$vr]])
+        identification <<- model$id
+        geemodel <<- geeglm(form,data = train,id = train[[identification]],family = model$fm,corstr = model$cs)
+        pred_70_30 = predict(geemodel,test,type="response")
+        pred_70_30 = prediction(pred_70_30, test[[model$vr]])
         perf_70_30 = performance(pred_70_30, "acc")
         roc_70_30 = performance(pred_70_30,"tpr","fpr")
-        
         #ACC
         max_ind_70_30 = which.max(slot(perf_70_30, "y.values")[[1]] )
         acc_70_30 = slot(perf_70_30, "y.values")[[1]][max_ind_70_30]
         auc_70_30 = performance(pred_70_30, measure = "auc")
         auc = auc_70_30@y.values[[1]]
-        return(list(plotroc,acc_70_30,auc))
+        return(list(roc_70_30,acc_70_30,auc))
       }
       
       observeEvent(input$Splitbtn,{
@@ -2080,19 +2463,16 @@ server <- function(input, output, session) {
             })
             results = ROC_Analysis(train_70,test_70,Model1)
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model1$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model1$mn,".png",sep="")
               },
               content=function(file){
-                m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model1$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot = m1_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+                dev.off()
               })
             output$ROCplot2 <- NULL
             output$ROC_ACC_1 <- renderText({
@@ -2111,19 +2491,16 @@ server <- function(input, output, session) {
             })
             results = ROC_Analysis(train_70,test_70,Model2)
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model2$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model2$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model2$mn,".png",sep="")
               },
               content=function(file){
-                m2_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model2$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot = m2_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model2$mn)
+                dev.off()
               })
             output$ROCplot2 <- NULL
             output$ROC_ACC_1 <- renderText({
@@ -2142,19 +2519,16 @@ server <- function(input, output, session) {
             })
             results = ROC_Analysis(train_70,test_70,Model3)
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model3$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model3$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model3$mn,".png",sep="")
               },
               content=function(file){
-                m3_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model3$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot=m3_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model3$mn)
+                dev.off()
               })
             output$ROCplot2 <- NULL
             output$ROC_ACC_1 <- renderText({
@@ -2175,19 +2549,16 @@ server <- function(input, output, session) {
               Model1$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model1$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model1$mn,".png",sep="")
               },
               content=function(file){
-                m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model1$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot = m1_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+                dev.off()
               })
             output$ROC_model_name_2 <- renderText({
               Model2$mn
@@ -2196,19 +2567,16 @@ server <- function(input, output, session) {
               Model2$md
             })
             output$ROCplot2 <- renderPlot({
-              ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model2$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
             })
             output$Download_Plot_2 <-downloadHandler(
               filename = function(){
                 paste(Model2$mn,".png",sep="")
               },
               content=function(file){
-                m2_plot = ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model2$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot = m2_plot)
+                png(file)
+                plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
+                dev.off()
               })
             output$ROC_ACC_1 <- renderText({
               results[[2]]
@@ -2234,19 +2602,16 @@ server <- function(input, output, session) {
               Model1$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model1$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model1$mn,".png",sep="")
               },
               content=function(file){
-                m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model1$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot = m1_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+                dev.off()
               })
             output$ROC_model_name_2 <- renderText({
               Model3$mn
@@ -2255,19 +2620,16 @@ server <- function(input, output, session) {
               Model3$md
             })
             output$ROCplot2 <- renderPlot({
-              ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model3$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
             })
             output$Download_Plot_2 <-downloadHandler(
               filename = function(){
                 paste(Model3$mn,".png",sep="")
               },
               content=function(file){
-                m3_plot = ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model3$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m3_plot)
+                png(file)
+                plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
+                dev.off()
               })
             output$ROC_ACC_1 <- renderText({
               results[[2]]
@@ -2293,19 +2655,16 @@ server <- function(input, output, session) {
               Model2$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model2$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model2$mn,".png",sep="")
               },
               content=function(file){
-                m2_plot = ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model2$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot=m2_plot)
+                png(file)
+                plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
+                dev.off()
               })
             output$ROC_model_name_2 <- renderText({
               Model3$mn
@@ -2314,19 +2673,16 @@ server <- function(input, output, session) {
               Model3$md
             })
             output$ROCplot2 <- renderPlot({
-              ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model3$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
             })
             output$Download_Plot_2 <-downloadHandler(
               filename = function(){
                 paste(Model3$mn,".png",sep="")
               },
               content=function(file){
-                m3_plot = ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model3$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot = m3_plot)
+                png(file)
+                plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
+                dev.off()
               })
             output$ROC_ACC_1 <- renderText({
               results_2[[2]]
@@ -2360,27 +2716,20 @@ server <- function(input, output, session) {
               Model2$md
             })
             output$ROCplot <- renderPlot({
-              
-              m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model1$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-              m2_plot = ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model2$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-              plot_grid(m1_plot, m2_plot, labels = "AUTO")
+              par(mfrow = c(1,2))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+              plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model1$mn,"_",Model2$mn,".png",sep="")
               },
               content=function(file){
-                m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model1$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                m2_plot = ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model2$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot = plot_grid(m1_plot, m2_plot, labels = "AUTO"))
+                png(file)
+                par(mfrow = c(1,2))
+                plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+                plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
+                dev.off()
               })
             output$ROC_model_name_3 <- renderText({
               Model3$mn
@@ -2389,19 +2738,16 @@ server <- function(input, output, session) {
               Model3$md
             })
             output$ROCplot2 <- renderPlot({
-              ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model3$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
             })
             output$Download_Plot_2 <-downloadHandler(
               filename = function(){
                 paste(Model3$mn,".png",sep="")
               },
               content=function(file){
-                m3_plot = ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model3$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m3_plot)
+                png(file)
+                plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
+                dev.off()
               })
             output$ROC_ACC_1 <- renderText({
               results[[2]]
@@ -2439,19 +2785,16 @@ server <- function(input, output, session) {
               Model1$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model1$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model1$mn,".png",sep="")
               },
               content=function(file){
-                m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model1$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot = m1_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+                dev.off()
               })
             output$ROCplot2 <- NULL
             output$ROC_ACC_1 <- renderText({
@@ -2470,19 +2813,16 @@ server <- function(input, output, session) {
               Model2$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model2$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model2$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model2$mn,".png",sep="")
               },
               content=function(file){
-                m2_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model2$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m2_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model2$mn)
+                dev.off()
               })
             output$ROCplot2 <- NULL
             output$ROC_ACC_1 <- renderText({
@@ -2501,19 +2841,16 @@ server <- function(input, output, session) {
               Model3$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model3$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model3$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model3$mn,".png",sep="")
               },
               content=function(file){
-                m3_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model3$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m3_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model3$mn)
+                dev.off()
               })
             output$ROCplot2 <- NULL
             output$ROC_ACC_1 <- renderText({
@@ -2533,19 +2870,16 @@ server <- function(input, output, session) {
               Model1$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model1$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model1$mn,".png",sep="")
               },
               content=function(file){
-                m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model1$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m1_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+                dev.off()
               })
             output$ROC_model_name_2 <- renderText({
               Model2$mn
@@ -2554,19 +2888,16 @@ server <- function(input, output, session) {
               Model2$md
             })
             output$ROCplot2 <- renderPlot({
-              ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model2$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
             })
             output$Download_Plot_2 <-downloadHandler(
               filename = function(){
                 paste(Model2$mn,".png",sep="")
               },
               content=function(file){
-                m2_plot = ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model2$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m2_plot)
+                png(file)
+                plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
+                dev.off()
               })
             output$ROC_ACC_1 <- renderText({
               results[[2]]
@@ -2591,19 +2922,16 @@ server <- function(input, output, session) {
               Model1$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model1$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model1$mn,".png",sep="")
               },
               content=function(file){
-                m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model1$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot = m1_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+                dev.off()
               })
             output$ROC_model_name_2 <- renderText({
               Model3$mn
@@ -2612,19 +2940,16 @@ server <- function(input, output, session) {
               Model3$md
             })
             output$ROCplot2 <- renderPlot({
-              ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model3$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
             })
             output$Download_Plot_2 <-downloadHandler(
               filename = function(){
                 paste(Model3$mn,".png",sep="")
               },
               content=function(file){
-                m3_plot = ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model3$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot = m3_plot)
+                png(file)
+                plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
+                dev.off()
               })
             output$ROC_ACC_1 <- renderText({
               results[[2]]
@@ -2649,19 +2974,16 @@ server <- function(input, output, session) {
               Model2$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model2$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model2$mn,".png",sep="")
               },
               content=function(file){
-                m2_plot = ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model2$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m2_plot)
+                png(file)
+                plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
+                dev.off()
               })
             output$ROC_model_name_2 <- renderText({
               Model3$mn
@@ -2670,19 +2992,16 @@ server <- function(input, output, session) {
               Model3$md
             })
             output$ROCplot2 <- renderPlot({
-              ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model3$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
             })
             output$Download_Plot_2 <-downloadHandler(
               filename = function(){
                 paste(Model3$mn,".png",sep="")
               },
               content=function(file){
-                m3_plot = ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model3$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m3_plot)
+                png(file)
+                plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
+                dev.off()
               })
             output$ROC_ACC_1 <- renderText({
               results_2[[2]]
@@ -2714,26 +3033,20 @@ server <- function(input, output, session) {
               Model2$md
             })
             output$ROCplot <- renderPlot({
-              m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model1$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-              m2_plot = ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model2$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-              plot_grid(m1_plot,m2_plot, labels = "AUTO")
+              par(mfrow = c(1,2))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+              plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model1$mn,"_",Model2$mn,".png",sep="")
               },
               content=function(file){
-                m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model1$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                m2_plot = ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model2$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot_grid(m1_plot,m2_plot, labels = "AUTO"))
+                png(file)
+                par(mfrow = c(1,2))
+                plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+                plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
+                dev.off()
               })
             output$ROC_model_name_3 <- renderText({
               Model3$mn
@@ -2742,19 +3055,16 @@ server <- function(input, output, session) {
               Model3$md
             })
             output$ROCplot2 <- renderPlot({
-              ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model3$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
             })
             output$Download_Plot_2 <-downloadHandler(
               filename = function(){
                 paste(Model3$mn,".png",sep="")
               },
               content=function(file){
-                m3_plot = ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model3$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m3_plot)
+                png(file)
+                plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
+                dev.off()
               })
             output$ROC_ACC_1 <- renderText({
               results[[2]]
@@ -2791,19 +3101,16 @@ server <- function(input, output, session) {
               Model1$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model1$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model1$mn,".png",sep="")
               },
               content=function(file){
-                m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model1$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m1_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+                dev.off()
               })
             output$ROCplot2 <- NULL
             output$ROC_ACC_1 <- renderText({
@@ -2822,19 +3129,16 @@ server <- function(input, output, session) {
               Model2$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model2$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model2$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model2$mn,".png",sep="")
               },
               content=function(file){
-                m2_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model2$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file,plot = m2_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model2$mn)
+                dev.off()
               })
             output$ROCplot2 <- NULL
             output$ROC_ACC_1 <- renderText({
@@ -2853,19 +3157,16 @@ server <- function(input, output, session) {
               Model3$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model3$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model3$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model3$mn,".png",sep="")
               },
               content=function(file){
-                m3_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model3$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m3_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model3$mn)
+                dev.off()
               })
             output$ROCplot2 <- NULL
             output$ROC_ACC_1 <- renderText({
@@ -2885,19 +3186,16 @@ server <- function(input, output, session) {
               Model1$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model1$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model1$mn,".png",sep="")
               },
               content=function(file){
-                m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model1$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m1_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+                dev.off()
               })
             output$ROC_model_name_2 <- renderText({
               Model2$mn
@@ -2906,19 +3204,16 @@ server <- function(input, output, session) {
               Model2$md
             })
             output$ROCplot2 <- renderPlot({
-              ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model2$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
             })
             output$Download_Plot_2 <-downloadHandler(
               filename = function(){
                 paste(Model2$mn,".png",sep="")
               },
               content=function(file){
-                m2_plot = ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model2$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m2_plot)
+                png(file)
+                plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
+                dev.off()
               })
             output$ROC_ACC_1 <- renderText({
               results[[2]]
@@ -2943,19 +3238,16 @@ server <- function(input, output, session) {
               Model1$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model1$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model1$mn,".png",sep="")
               },
               content=function(file){
-                m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model1$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot= m1_plot)
+                png(file)
+                plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+                dev.off()
               })
             output$ROC_model_name_2 <- renderText({
               Model3$mn
@@ -2964,19 +3256,16 @@ server <- function(input, output, session) {
               Model3$md
             })
             output$ROCplot2 <- renderPlot({
-              ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model3$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
             })
             output$Download_Plot_2 <-downloadHandler(
               filename = function(){
                 paste(Model3$mn,".png",sep="")
               },
               content=function(file){
-                m3_plot = ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model3$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m3_plot)
+                png(file)
+                plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
+                dev.off()
               })
             output$ROC_ACC_1 <- renderText({
               results[[2]]
@@ -3001,19 +3290,16 @@ server <- function(input, output, session) {
               Model2$md
             })
             output$ROCplot <- renderPlot({
-              ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model2$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model2$mn,".png",sep="")
               },
               content=function(file){
-                m2_plot = ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model2$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m2_plot)
+                png(file)
+                plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
+                dev.off()
               })
             output$ROC_model_name_2 <- renderText({
               Model3$mn
@@ -3022,19 +3308,16 @@ server <- function(input, output, session) {
               Model3$md
             })
             output$ROCplot2 <- renderPlot({
-              ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model3$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
             })
             output$Download_Plot_2 <-downloadHandler(
               filename = function(){
                 paste(Model3$mn,".png",sep="")
               },
               content=function(file){
-                m3_plot = ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model3$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m3_plot)
+                png(file)
+                plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
+                dev.off()
               })
             output$ROC_ACC_1 <- renderText({
               results_2[[2]]
@@ -3066,26 +3349,20 @@ server <- function(input, output, session) {
               Model2$md
             })
             output$ROCplot <- renderPlot({
-              m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model1$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-              m2_plot = ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model2$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-              plot.grid(m1_plot,m2_plot, labels = "AUTO")
+              par(mfrow = c(1,2))
+              plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+              plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
             })
             output$Download_Plot <-downloadHandler(
               filename = function(){
                 paste(Model1$mn,"_",Model2$mn,".png",sep="")
               },
               content=function(file){
-                m1_plot = ggroc(results[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model1$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                m2_plot = ggroc(results_2[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model2$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = plot.grid(m1_plot,m2_plot, labels = "AUTO"))
+                png(file)
+                par(mfrow = c(1,2))
+                plot(results[[1]], colorize = T, lwd = 2, main = Model1$mn)
+                plot(results_2[[1]], colorize = T, lwd = 2, main = Model2$mn)
+                dev.off()
               })
             output$ROC_model_name_3 <- renderText({
               Model3$mn
@@ -3094,19 +3371,16 @@ server <- function(input, output, session) {
               Model3$md
             })
             output$ROCplot2 <- renderPlot({
-              ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                ggtitle(Model3$mn) + 
-                theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
+              plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
             })
             output$Download_Plot_2 <-downloadHandler(
               filename = function(){
                 paste(Model3$mn,".png",sep="")
               },
               content=function(file){
-                m3_plot = ggroc(results_3[[1]], colour = 'darkred', size = 2) +
-                  ggtitle(Model3$mn) + 
-                  theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"))
-                ggsave(file, plot = m3_plot)
+                png(file)
+                plot(results_3[[1]], colorize = T, lwd = 2, main = Model3$mn)
+                dev.off()
               })
             output$ROC_ACC_1 <- renderText({
               results[[2]]
@@ -3140,7 +3414,7 @@ server <- function(input, output, session) {
         }
         form = as.formula(paste(model$vr, '~', cov, collapse = ""))
         identification = model$id
-        geemodel = geeglm(form,data = data, id = data[[identification]], family = model$fm, corstr = tolower(model$cs), scale.fix = TRUE)
+        geemodel = geeglm(form,data = data, id = data[[identification]], family = model$fm, corstr = model$cs, scale.fix = TRUE)
         ccgeepack = coef(summary(geemodel))
         citab_geepack <- with(as.data.frame(ccgeepack),
                               cbind(lwr=Estimate-1.96*Std.err,

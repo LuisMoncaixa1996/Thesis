@@ -1,4 +1,4 @@
-### **Identication Column**
+### **Identification Column**
 
-Nesta secção são definidas a familia de distribuição da variável resposta e a coluna correspondente ao id ou elemento identificador das observações repetidas.
-Sendo os modelos *GEE* baseados na utilização de amostras repetitivas, sejam estas ao longo do tempo ou tendo em conta amostras relacionadas entre si, é necessário identificar as observações repetidas/relacionadas. O utilizador deverá selecionar a columa que **identifica** essas mesma observações repetitivas.
+In this section, the distribution family of the response variable and the column corresponding to the id or identifier of the repeated observations are defined.
+As *GEE* models are based on the use of repetitive samples, either over time or taking into account samples related to each other, it is necessary to identify repeated/related observations. The user should select the column that **identifies** these same repetitive observations.
