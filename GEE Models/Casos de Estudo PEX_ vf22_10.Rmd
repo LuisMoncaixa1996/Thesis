@@ -1,0 +1,339 @@
+---
+title: "Untitled"
+output:
+  html_document: default
+  pdf_document: default
+date: '2022-04-01'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r}
+
+library(dplyr)
+library(caTools)
+library(pROC)
+library(geepack)
+library(spind)
+library(gee)
+library(ROCR)
+library(MESS)
+library(readxl)
+library(ggplot2)
+
+```
+
+
+
+
+``` {r}
+#Carregamento do dataset e criação dos datasets de teste e treino.
+#Os datasets foram divididos de três formas diferentes. (80% - Treino / 20% - Teste) (75% - Treino/ 25% - Teste) (70% - Treino/ 30% - Teste)
+
+base_de_dados_PEX_corrigida19fev2018 <- read_excel("C:/Users/luism/Desktop/Mestrado Bioinformática/Tese/Packages Study/Oftal DataBase/data_for_app.xlsx")
+data = base_de_dados_PEX_corrigida19fev2018
+names(data)[names(data) == "Dil pp (mm)"] <- "Dilpp"
+names(data)[names(data) == "LIO (Dp)"] <- "LIO_Dp"
+names(data)[names(data) == "Local da LIO"] <- "Local_da_LIO"
+
+data <- data[complete.cases(data), ] 
+
+data$Lat = factor(data$Lat)
+data$Dilpp = factor(data$Dilpp)
+data$Local_da_LIO = factor(data$Local_da_LIO)
+data$Internos = factor(data$Internos)
+data$Comp_DZ = factor(data$Comp_DZ)
+data$Comp_outra = factor(data$Comp_outra)
+data$Comp_VA = factor(data$Comp_VA)
+data$Comp_RCP = factor(data$Comp_RCP)
+
+
+
+
+```
+
+##Seleção da melhor estrutura de correlação ajustável a um modelo considerando todas as covariáveis de interesse 
+
+
+
+``` {r}
+
+
+gee_model_ind = geeglm(PEX~(I(Idade) + Sexo + Lat + LIO_Dp +  Dilpp + Local_da_LIO + Internos + Comp_DZ + Comp_outra + Comp_VA + Comp_RCP ) , id = Processo , data = data, family = binomial, corstr = "independence",scale.fix = TRUE)
+qic_val_ind = QIC(gee_model_ind)[1]
+qicu_val_ind = QIC(gee_model_ind)[2]
+names(qic_val_ind) = NULL
+names(qicu_val_ind) = NULL
+
+
+gee_model_ex = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + LIO_Dp + Local_da_LIO + Internos + Comp_DZ + Comp_outra + Comp_VA + Comp_RCP ) , id = Processo , data = data, family = binomial, corstr = "exchangeable",scale.fix = TRUE)
+qic_val_ex = QIC(gee_model_ex)[1]
+qicu_val_ex = QIC(gee_model_ex)[2]
+names(qic_val_ex) = NULL
+names(qicu_val_ex) = NULL
+
+gee_model_ar = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp  + LIO_Dp + Local_da_LIO + Internos + Comp_DZ + Comp_outra + Comp_VA + Comp_RCP) , id = Processo , data = data, family = binomial, corstr = "ar1",scale.fix = TRUE)
+qic_val_ar = QIC(gee_model_ar)[1]
+qicu_val_ar = QIC(gee_model_ar)[2]
+names(qic_val_ar) = NULL
+names(qicu_val_ar) = NULL
+
+
+nwe <- data.frame(QIC = c(qic_val_ind,qic_val_ex,qic_val_ar), 
+                                QICu = c(qicu_val_ind,qicu_val_ex,qicu_val_ar))
+rownames(nwe) <- c('Independence','Exchangeable','AR-1')
+
+nwe
+
+```
+
+Através dos valores de QIC e QICu para as respetivas estruturas de correlação verifica-se que a estrutura de correlação independente apresenta um valor de QIC menor pelo que será selecionada essa estrutura.
+
+
+
+
+##Selecção da melhor divisão em treino-teste utilizando a validação ROC
+
+
+```{r}
+
+smp_size <- floor(0.80 * nrow(data))
+smp_size2 <- floor(0.70 * nrow(data))
+smp_size3 <- floor(0.75 * nrow(data))
+set.seed(123)
+train_ind <- sample(seq_len(nrow(data)), size = smp_size)
+train_ind2 <- sample(seq_len(nrow(data)),size = smp_size2)
+train_ind3 <- sample(seq_len(nrow(data)),size = smp_size3)
+train_80 <- data[train_ind, ]
+train_75 <- data[train_ind3,]
+train_70 <- data[train_ind2,]
+test_80 <- data[-train_ind, ]
+test_75 <- data[-train_ind3, ]
+test_70 <- data[-train_ind2, ]
+
+train_75$Local_da_LIO = factor(train_75$Local_da_LIO, levels = c(1,2,3))
+test_75$Local_da_LIO = factor(test_75$Local_da_LIO, levels = c(1,2,3))
+test_75 <- test_75[complete.cases(test_75), ]
+
+#Tabela para comparação das diferentes métricas
+tab = matrix(nrow = 3,ncol = 2)
+colnames(tab) = c("ACC","AUC")
+rownames(tab) = c("Modelo_70/30","Modelo_75/25","Modelo_80/20")
+
+tab2 = matrix(nrow = 3,ncol = 2)
+colnames(tab2) = c("ACC","AUC")
+rownames(tab2) = c("Modelo_All","Modelo_CP","Modelo_LO")
+
+```
+
+
+
+
+
+Foram definidos 3 modelos GEE considerando diferentes covariáveis: 
+-> Modelo considerando todas as covariáveis de interesse (Modelo_All)
+-> Modelo considerando apenas as covariáveis correspondentes ao individuo (Modelo_CP)
+-> Modelo considerando as covariáveis correspondentes à LIO e respetiva posição. (Modelo_LO)
+
+Uma vez que o package (gee) permite apenas analisar o modelo gee e não permite a sua utilização para validação cruzada nem obter o valor de QIC para identificar a melhor estrutura de correlação, foi apenas utilizado o package (geepack) para os diferentes datasets de treino, de forma a obter métricas (acc e auc) que permitam identificar qual o modelo mais adequado para análise GEE. De forma a complementar a análise foram geradas, também as respetivas curvas ROC.
+
+
+```{r}
+#MODELO CONSIDERANDO TODAS AS COVARIÁVEIS
+
+#Foram utilizados dois packages de modo a realizar os modelos GEE (GEE & Geepack). Os packages permitem verficar qual a melhor estrutura de correlação através do valor de QIC. 
+
+#MODELOS 70_30
+
+GEEPACK_Modelo_70_30_ind = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + LIO_Dp + Local_da_LIO + Internos + Comp_DZ + Comp_outra + Comp_VA + Comp_RCP ) , id = Processo , data = train_70, family = binomial, corstr = "independence",scale.fix = TRUE)
+summary(GEEPACK_Modelo_70_30_ind)
+
+
+#Modelo 75_25
+
+GEEPACK_Modelo_75_25_ind = geeglm(PEX~(I(Idade) + Sexo + Lat + LIO_Dp + Dilpp + Local_da_LIO + Internos + Comp_DZ + Comp_outra + Comp_VA + Comp_RCP) ,id = Processo , data = train_75, family = binomial, corstr = "independence",scale.fix = TRUE)
+summary(GEEPACK_Modelo_75_25_ind)
+
+
+
+#Modelo 80_20
+
+GEEPACK_Modelo_80_20_ind = geeglm(PEX~(I(Idade) + Sexo + Lat + LIO_Dp + Dilpp + Local_da_LIO + Internos + Comp_DZ + Comp_outra + Comp_VA + Comp_RCP) , id = Processo , data = train_80, family = binomial, corstr = "independence")
+summary(GEEPACK_Modelo_80_20_ind)
+
+
+
+
+#Métricas para validação dos modelos e respetivas curvas ROC
+
+
+#Modelo 70_30
+library(ROCR)
+pred_70_30 = predict(GEEPACK_Modelo_70_30_ind,test_70,type="response")
+pred_70_30 = prediction(pred_70_30, test_70$PEX)
+perf_70_30 = performance(pred_70_30, "acc")
+
+#ACC
+max_ind_70_30 = which.max(slot(perf_70_30, "y.values")[[1]] )
+acc_70_30 = slot(perf_70_30, "y.values")[[1]][max_ind_70_30]
+tab[1][1] = acc_70_30
+
+#Curva ROC
+roc_70_30 = performance(pred_70_30,"tpr","fpr")
+plot(roc_70_30, colorize = T, lwd = 2)
+auc_70_30 = performance(pred_70_30, measure = "auc")
+tab[1,2]  = auc_70_30@y.values[[1]]
+
+
+#Modelo 75_25
+pred_75_25 = predict(GEEPACK_Modelo_75_25_ind,test_75,type="response")
+pred_75_25 = prediction(pred_75_25, test_75$PEX)
+perf_75_25 = performance(pred_75_25, "acc")
+
+#ACC
+max_ind_75_25 = which.max(slot(perf_75_25, "y.values")[[1]] )
+acc_75_25 = slot(perf_75_25, "y.values")[[1]][max_ind_75_25]
+tab[2,1] = acc_75_25
+
+#Curva ROC
+roc_75_25 = performance(pred_75_25,"tpr","fpr")
+plot(roc_75_25, colorize = T, lwd = 2)
+auc_75_25 = performance(pred_75_25, measure = "auc")
+tab[2,2]  = auc_75_25@y.values[[1]]
+
+
+#Modelo 80_20
+pred_80_20 = predict(GEEPACK_Modelo_80_20_ind,test_80,type="response")
+pred_80_20 = prediction(pred_80_20, test_80$PEX)
+perf_80_20 = performance(pred_80_20, "acc")
+
+#ACC
+max_ind_80_20 = which.max(slot(perf_80_20, "y.values")[[1]] )
+acc_80_20 = slot(perf_80_20, "y.values")[[1]][max_ind_80_20]
+tab[3,1] = acc_80_20
+
+#Curva ROC
+roc_80_20 = performance(pred_80_20,"tpr","fpr")
+plot(roc_80_20, colorize = T, lwd = 2)
+auc_80_20 = performance(pred_80_20, measure = "auc")
+tab[3,2]  = auc_80_20@y.values[[1]]
+
+
+
+tab2[1,1]= acc_80_20
+tab2[1,2]= auc_80_20@y.values[[1]]
+
+tab
+
+
+```
+
+Considerando a tabela com os diferentes splits do dataset, verificou-se que o modelo com 80% treino e 20% teste, apresenta as melhores métricas quando aplicada a análise ROC, pelo que será apenas considerada esta divisão nos restantes modelos.
+
+``` {r}
+#Modelo considerando as caracteristicas pessoais
+
+library(geepack)
+Modelo_80_20_CP = geeglm(PEX~Idade + Sexo + Lat  , id = Processo , data = train_80, family = binomial, corstr = "independence")
+summary(Modelo_80_20_CP)
+
+
+
+pred_80_20_CP = predict(Modelo_80_20_CP,test_80,type="response")
+pred_80_20_CP = prediction(pred_80_20_CP, test_80$PEX)
+perf_80_20_CP = performance(pred_80_20_CP, "acc")
+
+#ACC
+max_ind_80_20_CP = which.max(slot(perf_80_20_CP, "y.values")[[1]] )
+acc_80_20_CP = slot(perf_80_20_CP, "y.values")[[1]][max_ind_80_20_CP]
+tab2[2,1] = acc_80_20_CP
+
+#Curva ROC
+roc_80_20_CP = performance(pred_80_20_CP,"tpr","fpr")
+plot(roc_80_20_CP, colorize = T, lwd = 2)
+auc_80_20_CP = performance(pred_80_20_CP, measure = "auc")
+tab2[2,2]  = auc_80_20_CP@y.values[[1]]
+tab2
+
+
+```
+
+
+``` {r}
+#Modelo considerando a posicão da Lente Intra-Ocular.
+
+
+library(geepack)
+Modelo_80_20_LO = geeglm(PEX~(Lat + Dilpp + LIO_Dp + Local_da_LIO + Internos + Comp_DZ + Comp_outra + Comp_VA + Comp_RCP) , id = Processo , data = train_80, family = binomial, corstr = "independence")
+summary(Modelo_80_20_LO)
+
+
+
+pred_80_20_LO = predict(Modelo_80_20_LO,test_80,type="response")
+pred_80_20_LO = prediction(pred_80_20_LO, test_80$PEX)
+perf_80_20_LO = performance(pred_80_20_LO, "acc")
+
+#ACC
+max_ind_80_20_LO = which.max(slot(perf_80_20_LO, "y.values")[[1]] )
+acc_80_20_LO = slot(perf_80_20_LO, "y.values")[[1]][max_ind_80_20_LO]
+tab2[3,1] = acc_80_20_LO
+
+#Curva ROC
+roc_80_20_LO = performance(pred_80_20_LO,"tpr","fpr")
+plot(roc_80_20_LO, colorize = T, lwd = 2)
+auc_80_20_LO = performance(pred_80_20_LO, measure = "auc")
+tab2[3,2]  = auc_80_20_LO@y.values[[1]]
+tab2
+
+
+```
+
+Considerando as metricas obtidas por a validação através das curvas ROC e respetivas AUC's, é possível identificar que o modelo considerando apenas as variáveis relacionadas com a lente intraocular e respetivas posições (Modelo_LO), permite uma melhor análise de forma a identificar a influência de cada uma destas variáveis na Pseudoexfoliação ocular.
+Posto isto foram desenvolvidos dois modelos (utilizando o package gee e geepack) considerando todo o dataset de modo a considerar os clusters de cada individuo.
+
+``` {r}
+
+
+GEE_Modelo_LO = gee(PEX~(I(Idade) + Sexo + Lat + LIO_Dp + Dilpp ), id = Processo, data = data, family = binomial, corstr = "independence",scale.fix = T)
+summary(GEE_Modelo_LO)
+#Intervalos de confiança
+ccgee = coef(summary(GEE_Modelo_LO))
+citab_gee <- with(as.data.frame(ccgee),
+     cbind(lwr=Estimate-1.96*`Robust S.E.`,
+           upr=Estimate+1.96*`Robust S.E.`))
+rownames(citab_gee) <- rownames(ccgee)
+ccgee1 = as.data.frame(cbind(ccgee,citab_gee))
+ccgee1$Estimate = exp(ccgee1$Estimate)
+ccgee1$lwr = exp(ccgee1$lwr)
+ccgee1$upr = exp(ccgee1$upr)
+ccgee1
+
+
+
+#Package GEEPACK
+GEEPACK_Modelo_TOTAL = geeglm(PEX~(I(Idade) + Sexo + Lat + Dilpp + LIO_Dp + Local_da_LIO + Internos + Comp_DZ + Comp_outra + Comp_VA + Comp_RCP), id = Processo, data = data, family = binomial, corstr = "independence",scale.fix = T)
+
+
+
+
+#Intervalos de confiança
+ccgeepack = coef(summary(GEEPACK_Modelo_TOTAL))
+citab_geepack <- with(as.data.frame(ccgeepack),
+     cbind(lwr=Estimate-1.96*Std.err,
+           upr=Estimate+1.96*Std.err))
+rownames(citab_geepack) <- rownames(ccgeepack)
+ccgeepack1 = as.data.frame(cbind(ccgeepack,citab_geepack))
+ccgeepack1
+
+sapply(ccgeepack[,1], exp)
+exp(ccgeepack[1,1])
+
+ccgeepack1$Estimate = exp(ccgeepack1$Estimate)
+ccgeepack1$lwr = exp(ccgeepack1$lwr)
+ccgeepack1$upr = exp(ccgeepack1$upr)
+
+```
+Nos modelos acima descritos, quando utilizado o package gee, uma vez que este permite desenvolver o modelo mesmo com dados omissos existentes, foi introduzida a covariavel LIO_Dp para análise. No modelo utilizando o package geepack não foi possivel introduzir esta covariavel uma vez que esta apresenta valores omissos. Na análise dos modelos é possivel identificar algumas diferenças nas estimativas obtidas em algumas covariáveis, no entanto, na covariavel "Dil pp (mm)" as diferenças são irrelevantes, pelo que é possível identificar esta covariável como uma covariável de interesse, ou seja, tendo em conta que o seu valor estimado, verifica-se que a alteração de valor neste parâmetro influência a resposta da presença ou não da pseudoexfoliação, ou seja, uma menor dilatação pupilar poderá indicar uma presença de pseudoexfoliação.

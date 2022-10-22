@@ -1,0 +1,131 @@
+```{r}
+
+library(dplyr)
+library(car)
+library(readxl)
+library(ggplot2)
+library(Amelia)
+library(Rcpp)
+
+```
+
+##Identificação de Valores omissos
+
+```{r}
+
+data <- read_excel("data_cat.xlsx",
+                                 sheet = "Sheet1", col_types = c("numeric",
+                                                                     "numeric", "numeric", "text", "text",
+                                                                     "text", "text" , "text", "text",
+                                                                     "text", "text", "text", "text"))
+
+
+library(Amelia)
+library(Rcpp)
+missmap(data, main = "")
+
+
+```
+
+
+```{r}
+#Remoção dos valores omissos
+
+data_clean <- na.omit(data)
+missmap(data_clean)
+
+
+```
+
+##Análise Exploratória das variàveis contínuas
+
+
+
+```{r}
+#Estatística Descritiva
+
+summary(data_clean)
+
+
+#Histogramas relativos à Idade e LIO_DP
+
+Hist_Age= ggplot(data, aes(x=Idade)) +
+  geom_histogram(bins=15, color="black", fill="cyan3") +
+  theme(plot.title = element_text(size=8), axis.title.x=element_blank()) +
+  labs(y = "Frequência") + theme_light()
+Hist_Age
+
+
+Hist_LIO= ggplot(data_clean, aes(x=LIO_Dp)) +
+  geom_histogram(bins=15, color="black", fill="brown3") +
+  theme(plot.title = element_text(size=8), axis.title.x=element_blank()) + 
+  labs(x = "", y = "Frequência") + theme_light()
+Hist_LIO
+
+
+```
+
+##Análise Exploratória das variáveis categóricas 
+
+
+
+```{r}
+
+#Identificação da proporção de pacientes por sexo
+Sexo_plot= ggplot(data) + geom_bar(aes(x = sexo_cat), color="black" ,fill="azure") + theme_classic() +
+  labs(y = 'Frequência', x= 'Sexo dos pacientes')
+Sexo_plot
+
+
+#Presença da PEX observada nos diferentes olhos
+PEX_Eye=ggplot(data = data_clean ) +
+  geom_bar(mapping = aes(x=Lat_cat , fill=PEX_cat ), position = "dodge") + 
+  labs(x = 'Latência do paciente', y = 'Frequência', col = 'PEX') + 
+  guides(fill = guide_legend(title = 'PEX')) + theme_classic()
+PEX_Eye
+
+
+#Frequência das classes de dilatação pupilar observadas
+
+Dil_freq_plot<-ggplot(data, aes(x = Dil_cat, fill = Dil_cat)) +
+  geom_bar(stat =  "count") +
+  theme_classic() +
+  geom_text(stat="count", aes(label=..count..),vjust=0)
+scale_x_discrete(limit = c("???8", "???7-8", "???6-7","???5-6","<5"),
+                 labels= c("???8", "???7-8", "???6-7","???5-6","<5"))
+
+Dil_freq = Dil_freq_plot + labs(x = "Classes de dilatação pupilar", y = "Frequência") + guides(fill = guide_legend(title = 'Dill'))
+  
+Dil_freq
+
+#Proporção da presença da PEX nas diferentes classes de dilatação
+
+data %>%
+  group_by(Dil_cat, PEX_cat) %>%
+  summarise(n = n()) %>%
+  group_by(Dil_cat) %>%
+  mutate(prop = n/sum(n) * 100) %>%
+  ggplot(aes(x = Dil_cat, y = prop, fill = PEX_cat)) +
+  geom_col() +
+  labs(y = "Proporção (%)",
+       x = "Classes Dil") +
+  guides(fill = guide_legend(title = 'PEX')) + theme_classic() +
+  scale_fill_brewer(palette="RdPu")
+
+#Local da Lente Intraocular observada nos diferentes olhos
+
+LIO_Eye=ggplot(data = data_clean ) +
+  geom_bar(mapping = aes(x=Local_da_LIO_cat , fill=Lat_cat ), position = "dodge") + 
+  labs(x = 'Local da Lente Intraocular', y = 'Frequência', col = 'Lat') + 
+  guides(fill = guide_legend(title = 'Latência')) + theme_classic() + scale_fill_brewer(palette="Accent")
+LIO_Eye
+
+
+
+
+
+
+
+
+
+```
